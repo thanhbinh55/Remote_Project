@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Remote Control - Final</title>
+    <style>
+        body { font-family: 'Segoe UI', Consolas, sans-serif; background: #f4f6f8; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        /* Header Styles */
+        .header { display: flex; gap: 10px; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; align-items: center; }
+        .status { font-weight: bold; margin-left: auto; }
+        .status.connected { color: #28a745; } .status.disconnected { color: #dc3545; }
+
+        /* Grid & Panels */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { border: 1px solid #e1e4e8; padding: 15px; background: #fafbfc; border-radius: 5px; }
+        .full { grid-column: span 2; }
+        h3 { margin-top: 0; border-bottom: 1px solid #eaecef; padding-bottom: 8px; color: #0366d6; font-size: 16px; }
+
+        /* Inputs & Buttons */
+        input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: 600; transition: 0.2s; margin-right: 5px; }
+        button:hover { opacity: 0.9; }
+        .btn-blue { background: #007bff; } .btn-red { background: #dc3545; } 
+        .btn-green { background: #28a745; } .btn-gray { background: #6c757d; }
+
+        /* Tables & Logs */
+        .scroll-box { height: 200px; overflow-y: auto; margin-top: 10px; border: 1px solid #ddd; background: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background: #f6f8fa; position: sticky; top: 0; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        textarea { width: 100%; height: 80px; background: #24292e; color: #00ff00; border: none; padding: 5px; font-family: monospace; resize: vertical; box-sizing: border-box; }
+        #sys-log { height: 120px; background: #1b1f23; color: #f1f8ff; overflow-y: auto; font-size: 11px; padding: 8px; margin-top: 20px; font-family: monospace; border-radius: 4px; }
+
+        /* Media */
+        img.view-area { display: block; max-width: 100%; max-height: 350px; margin: 10px auto; border: 1px solid #ccc; background: #000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <b>IP Server:</b> <input type="text" id="ip" value="ws://localhost:9010">
+        <button class="btn-blue" onclick="connect()">🔌 Connect</button>
+        <span id="status" class="status disconnected">DISCONNECTED</span>
+    </div>
+
+    <div class="grid">
+        <div class="panel full">
+            <h3>📹 Webcam Stream (Realtime Binary)</h3>
+            <button class="btn-green" onclick="send('WEBCAM', 'START_STREAM')">▶ Start Stream</button>
+            <button class="btn-red" onclick="send('WEBCAM', 'STOP_STREAM')">⏹ Stop Stream</button>
+            <img id="cam-stream" class="view-area" alt="Webcam Stream Off">
+        </div>
+
+<div class="panel">
+            <h3>⚙️ Process Manager</h3>
+            <div style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+                <input type="text" id="proc-path" placeholder="Ex: notepad.exe" style="width: 120px;">
+                <button class="btn-green" onclick="startProcess()">🚀 Start New</button>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+                <button class="btn-blue" onclick="send('PROCESS', 'LIST')">🔄 Refresh List</button>
+                <input type="number" id="proc-pid" placeholder="PID" style="width: 70px;">
+                <button class="btn-red" onclick="killProcess()">☠️ Kill PID</button>
+            </div>
+
+            <div class="scroll-box">
+                <table id="proc-table">
+                    <thead><tr><th>PID</th><th>Name</th><th>Threads</th><th>Act</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>📦 App Manager</h3>
+            <div style="margin-bottom: 8px;">
+                <button class="btn-blue" onclick="send('APP', 'LIST')">🔄 Refresh</button>
+                <input type="text" id="app-path" placeholder="Notepad" style="width: 80px;">
+                <button class="btn-green" onclick="startApp()">🚀 Start</button>
+            </div>
+            <div class="scroll-box">
+                <table id="app-table">
+                    <thead><tr><th>Name</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>📸 Screenshot (Binary Fast)</h3>
+            <button class="btn-green" onclick="captureScreen()">📷 Capture Screen</button>
+            <img id="screen-img" class="view-area" style="max-height: 150px;" alt="Screenshot Area">
+        </div>
+
+        <div class="panel">
+            <h3>⌨️ Keylogger</h3>
+            <button class="btn-red" onclick="send('KEYBOARD', 'START')">Start Hook</button>
+            <button class="btn-gray" onclick="send('KEYBOARD', 'STOP')">Stop Hook</button>
+            <button class="btn-blue" onclick="document.getElementById('keylog-out').value=''">Clear</button>
+            <textarea id="keylog-out"></textarea>
+        </div>
+        
+        <div class="panel full">
+            <h3>🖥️ System Power</h3>
+            <button class="btn-red" onclick="if(confirm('Shutdown?')) send('SYSTEM', 'SHUTDOWN')">🛑 Shutdown</button>
+            <button class="btn-gray" onclick="if(confirm('Restart?')) send('SYSTEM', 'RESTART')">🔄 Restart</button>
+        </div>
+    </div>
+
+    <div id="sys-log"></div>
+</div>
+
+<script>
+    let ws = null;
+    const logDiv = document.getElementById('sys-log');
+    
+    // Cờ quan trọng: Phân biệt gói binary đến là Ảnh chụp màn hình hay Video stream
+    let isWaitingForScreenshot = false;
+
+    function log(msg) {
+        const div = document.createElement('div');
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logDiv.appendChild(div);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function connect() {
+        if (ws) { ws.close(); ws = null; }
+        ws = new WebSocket(document.getElementById('ip').value);
+        ws.binaryType = "arraybuffer"; // Bắt buộc cho Binary Mode
+
+        ws.onopen = () => {
+            document.getElementById('status').className = "status connected";
+            document.getElementById('status').innerText = "CONNECTED";
+            log("✅ WebSocket Connected");
+        };
+        ws.onclose = () => {
+            document.getElementById('status').className = "status disconnected";
+            document.getElementById('status').innerText = "DISCONNECTED";
+            log("❌ WebSocket Disconnected");
+        };
+
+        ws.onmessage = (event) => {
+            // 1. XỬ LÝ DỮ LIỆU NHỊ PHÂN (BINARY)
+            if (event.data instanceof ArrayBuffer) {
+                if (isWaitingForScreenshot) {
+                    // Nếu đang đợi Screenshot -> Hiển thị vào khung Screenshot
+                    renderImage('screen-img', event.data);
+                    isWaitingForScreenshot = false; // Reset cờ
+                    log("📸 Screenshot binary received");
+                } else {
+                    // Mặc định là Stream Webcam
+                    renderImage('cam-stream', event.data);
+                }
+                return;
+            }
+
+            // 2. XỬ LÝ DỮ LIỆU VĂN BẢN (JSON)
+            try {
+                const res = JSON.parse(event.data);
+                handleResponse(res);
+            } catch (e) {
+                console.error("JSON Parse Error", e);
+            }
+        };
+    }
+
+    // Render ảnh từ ArrayBuffer dùng Blob URL (Hiệu năng cao)
+    let urlCache = {};
+    function renderImage(elementId, buffer) {
+        const blob = new Blob([buffer], { type: "image/jpeg" });
+        const url = URL.createObjectURL(blob);
+        const img = document.getElementById(elementId);
+        
+        img.onload = () => {
+            if (urlCache[elementId]) URL.revokeObjectURL(urlCache[elementId]);
+            urlCache[elementId] = url;
+        };
+        img.src = url;
+    }
+
+    // --- GỬI LỆNH ---
+    function send(module, command, payload = {}) {
+        if (!ws || ws.readyState !== 1) { alert("Check connection!"); return; }
+        const msg = { module, command, payload };
+        ws.send(JSON.stringify(msg));
+    }
+
+    // --- UI ACTIONS ---
+    function captureScreen() {
+        isWaitingForScreenshot = true; // Bật cờ đợi ảnh
+        send('SCREEN', 'CAPTURE_BINARY');
+    }
+
+    function killProcess() {
+        const pid = document.getElementById('proc-pid').value;
+        if(pid) send('PROCESS', 'KILL', { pid: parseInt(pid) });
+    }
+// Thêm hàm này vào vùng <script>
+    function startProcess() {
+        const path = document.getElementById('proc-path').value;
+        if (path) {
+            // Gửi lệnh PROCESS -> START kèm payload path
+            send('PROCESS', 'START', { path: path });
+        } else {
+            alert("Please enter process path/name!");
+        }
+    }
+    function startApp() {
+        const path = document.getElementById('app-path').value;
+        if(path) send('APP', 'START', { path: path });
+    }
+
+    // --- XỬ LÝ JSON RESPONSE ---
+    function handleResponse(res) {
+        if (res.status === 'error') { log("⛔ " + res.message); return; }
+
+        // PROCESS LIST
+        if (res.module === 'PROCESS' && res.command === 'LIST') {
+            const tbody = document.querySelector('#proc-table tbody');
+            tbody.innerHTML = "";
+            const list = (res.data && res.data.process_list) ? res.data.process_list : [];
+            
+            list.slice(0, 300).forEach(p => {
+                const row = tbody.insertRow();
+                row.insertCell().innerText = p.pid;
+                row.insertCell().innerText = p.name;
+                row.insertCell().innerText = p.threads;
+                
+                const btn = document.createElement('button');
+                btn.innerText = "X";
+                btn.className = "btn-red";
+                btn.style.padding = "2px 6px";
+                btn.onclick = () => { document.getElementById('proc-pid').value = p.pid; };
+                row.insertCell().appendChild(btn);
+            });
+            log(`Loaded ${list.length} processes`);
+        }
+
+        // APP LIST
+        else if (res.module === 'APP' && res.command === 'LIST') {
+            const tbody = document.querySelector('#app-table tbody');
+            tbody.innerHTML = "";
+            (res.apps || []).forEach(app => {
+                const row = tbody.insertRow();
+                row.insertCell().innerText = app.exe;
+                const btn = document.createElement('button');
+                btn.innerText = "Kill"; 
+                btn.className = "btn-red"; btn.style.fontSize = "10px";
+                btn.onclick = () => send('APP', 'KILL', { name: app.exe });
+                row.insertCell().appendChild(btn);
+            });
+        }
+
+        // KEYLOGGER
+        else if (res.module === 'KEYBOARD' && res.command === 'PRESS') {
+            let k = res.data.key;
+            if(k === '[ENTER]') k = '\n';
+            const txt = document.getElementById('keylog-out');
+            txt.value += k;
+            txt.scrollTop = txt.scrollHeight;
+        }
+        
+        else {
+            log(`ℹ️ [${res.module}] ${res.message || 'OK'}`);
+        }
+    }
+</script>
+</body>
+</html>

