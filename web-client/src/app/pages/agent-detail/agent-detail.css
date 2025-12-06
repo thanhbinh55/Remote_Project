@@ -16,10 +16,10 @@ h1 {
 }
 
 .card {
-  background: #fff;
+  background: #ffffff00;
   padding: 20px;
   border-radius: 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e5e7eb00;
   box-shadow: 0 4px 16px rgba(0,0,0,0.05);
 }
 
@@ -31,6 +31,7 @@ h1 {
 }
 
 .status-pill {
+  margin-left: 8px;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -38,7 +39,7 @@ h1 {
 }
 
 .pill-online {
-  background: #dcfce7;
+  background: #dcfce762;
   color: #166534;
 }
 
@@ -88,7 +89,7 @@ h1 {
 }
 
 .module-btn {
-  background: #f9fafb;
+  background: #000000;
   border: 1px solid #e5e7eb;
   padding: 16px;
   border-radius: 12px;
@@ -140,4 +141,14 @@ h1 {
 .placeholder {
   color: #9ca3af;
   font-size: 14px;
+}
+.keylog-output {
+    padding: 10px;
+    background: rgba(0, 10, 0, 0.8);
+    border: 1px solid var(--dim-color);
+    border-radius: 6px;
+    color: #00ff99;
+    min-height: 120px;
+    white-space: pre-wrap;
+    font-family: "Consolas", monospace;
 }

@@ -89,6 +89,9 @@
             <td>{{ p.pid }}</td>
             <td>{{ p.name }}</td>
             <td>{{ p.threads }}</td>
+            <td>
+              <button class="btn btn-danger" (click)="killProcess(p.pid)">KILL</button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -107,8 +110,8 @@
       <div class="btn-bar">
         <button class="btn btn-danger" (click)="sendSystemShutdown()">Shutdown</button>
         <button class="btn btn-danger" (click)="sendSystemRestart()">Restart</button>
-        <button class="btn" (click)="sendSystemLogoff()">Logoff</button>
-        <button class="btn" (click)="sendSystemLock()">Lock</button>
+        <!-- <button class="btn" (click)="sendSystemLogoff()">Logoff</button>
+        <button class="btn" (click)="sendSystemLock()">Lock</button> -->
       </div>
     </div>
 
@@ -143,7 +146,7 @@
         <button class="btn" (click)="sendAppStart()">➕ START…</button>
       </div>
 
-      <table *ngIf="appList().length">
+      <!-- <table *ngIf="appList().length">
         <thead>
           <tr>
             <th>ID</th>
@@ -158,7 +161,25 @@
 <td>{{ a.exe }}</td>
           </tr>
         </tbody>
-      </table>
+      </table> -->
+      <table *ngIf="appList().length">
+  <thead>
+    <tr>
+      <th>NAME</th>
+      <th>ACTION</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let app of appList()">
+      <td>{{ app.exe }}</td>
+
+      <td>
+        <button class="btn btn-danger" (click)="killApp(app.exe)">KILL</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
       <div *ngIf="!appList().length" class="placeholder">
         Bấm LIST để tải danh sách ứng dụng.
@@ -174,7 +195,7 @@
       <div class="btn-bar">
         <button class="btn" (click)="sendKeyloggerStart()">Start</button>
         <button class="btn btn-danger" (click)="sendKeyloggerStop()">Stop</button>
-        <button class="btn" (click)="sendKeyloggerGetLog()">Get Log</button>
+        <button class="btn-blue" (click)="clearKeylogs()">CLEAR</button>
       </div>
 
       <table *ngIf="ws.keylogList().length">
@@ -193,9 +214,21 @@
           </tr>
         </tbody>
       </table>
+        <!-- HIỂN THỊ DẠNG TEXTAREA GIỐNG MẪU -->
+  <!-- <textarea 
+      class="keylog-textarea"
+      readonly
+      *ngIf="ws.keylogList().length">
+    {{keylogString() }}
+  </textarea> -->
+
 
       <div *ngIf="!ws.keylogList().length" class="placeholder">
-        Chưa có log.
+        <!-- Chưa có log. -->
+         <div id="keylog-box" class="keylog-output">
+            Chưa có log.
+          </div>
+
       </div>
     </div>
 

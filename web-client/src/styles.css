@@ -1,1 +1,614 @@
-/* You can add global styles to this file, and also import other style files */
+/* ================== CORE HACKER THEME ================== */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg-color: #020202;
+  --main-color: #00ff41;
+  --dim-color: #003b00;
+  --accent-color: #00f7ff;
+  --alert-color: #ff003c;
+  --glass-bg: rgba(0, 10, 0, 0.9);
+
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Share Tech Mono', monospace;
+  background-color: var(--bg-color);
+  color: var(--main-color);
+}
+
+/* ================== GLOBAL BACKGROUND LAYERS ================== */
+
+/* canvas matrix nằm trong index.html, chỉ cần style */
+#matrix-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+/* scanline overlay */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.28) 50%,
+    rgba(0, 0, 0, 0.28) 100%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 50;
+  mix-blend-mode: soft-light;
+}
+
+/* ================== PAGE CONTAINER ================== */
+
+.page {
+  min-height: 100vh;
+  padding: 32px 32px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Vignette nhẹ xung quanh page */
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top, rgba(0, 247, 255, 0.12), transparent 55%),
+    radial-gradient(circle at bottom, rgba(0, 255, 65, 0.08), transparent 70%);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.page > * {
+  position: relative;
+}
+
+/* ================== TYPOGRAPHY ================== */
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+h1 {
+  font-size: 26px;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  text-shadow: 0 0 12px rgba(0, 247, 255, 0.6);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6ee7b7;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.85;
+}
+
+/* ================== AGENT LIST HEADER ================== */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.header-left .header-title {
+  font-size: 28px;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  text-shadow: 0 0 14px rgba(0, 247, 255, 0.7);
+  letter-spacing: 3px;
+}
+
+.header .tagline {
+  margin-top: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  letter-spacing: 2px;
+}
+
+/* Wave box */
+.header-wave {
+  position: relative;
+  width: 260px;
+  height: 60px;
+  border-radius: 14px;
+  border: 1px solid var(--dim-color);
+  background: rgba(0, 10, 0, 0.9);
+  overflow: hidden;
+  box-shadow: 0 0 14px rgba(0, 255, 65, 0.12);
+}
+
+.header-wave #netwave {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* .header-wave-label {
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--accent-color);
+  text-transform: uppercase;
+} */
+.traffic-wrapper {
+    position: absolute;
+    top: 0px;         /* tuỳ bạn chỉnh */
+    right: 120px;      /* tuỳ bạn chỉnh */
+    width: 260px;
+}
+
+.header-wave-label {
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--accent-color);
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 50;
+}
+
+.header-wave {
+    width: 260px;
+    height: 60px;
+    border: 1px solid var(--dim-color);
+    border-radius: 12px;
+    background: rgba(0, 10, 0, 0.8);
+    overflow: hidden;
+    position: relative;
+}
+
+
+/* ================== GRID ================== */
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 18px;
+}
+
+/* ================== CARD / PANEL ================== */
+
+.card,
+.modules-card,
+.section-card {
+  background: var(--glass-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--dim-color);
+  padding: 16px 18px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.9),
+    0 0 18px rgba(0, 255, 65, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Corners kiểu REMOTE_OPS */
+.card::before,
+.card::after,
+.modules-card::before,
+.modules-card::after,
+.section-card::before,
+.section-card::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.card::before,
+.modules-card::before,
+.section-card::before {
+  top: -1px;
+  left: -1px;
+  width: 18px;
+  height: 18px;
+  border-top: 2px solid var(--accent-color);
+  border-left: 2px solid var(--accent-color);
+}
+
+.card::after,
+.modules-card::after,
+.section-card::after {
+  bottom: -1px;
+  right: -1px;
+  width: 18px;
+  height: 18px;
+  border-bottom: 2px solid var(--accent-color);
+  border-right: 2px solid var(--accent-color);
+}
+
+.card:hover,
+.modules-card:hover,
+.section-card:hover {
+  border-color: var(--main-color);
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 65, 0.3),
+    0 0 26px rgba(0, 255, 65, 0.25);
+}
+
+/* Section title cho các module */
+.section-title {
+  font-size: 15px;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin: 10px 0 8px;
+  border-bottom: 1px dashed var(--dim-color);
+  padding-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+/* ================== BUTTONS ================== */
+
+button {
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.btn,
+.module-btn {
+  border-radius: 999px;
+  border: 1px solid var(--main-color);
+  background: rgba(0, 40, 0, 0.75);
+  color: var(--main-color);
+  padding: 8px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.18s ease-out;
+}
+
+.btn::before,
+.module-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(0, 255, 65, 0.3),
+    transparent 60%
+  );
+  opacity: 0;
+  transform: translateX(-40%);
+  transition: all 0.22s ease-out;
+}
+
+.btn:hover,
+.module-btn:hover {
+  background: var(--main-color);
+  color: #000;
+  box-shadow: 0 0 14px rgba(0, 255, 65, 0.7);
+  transform: translateY(-1px);
+}
+
+.btn:hover::before,
+.module-btn:hover::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: rgba(31, 41, 55, 0.9);
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* Danger */
+.btn-danger {
+  border-color: var(--alert-color);
+  color: var(--alert-color);
+  background: rgba(60, 0, 0, 0.9);
+}
+
+.btn-danger:hover {
+  background: var(--alert-color);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 0, 60, 0.7);
+}
+
+/* Secondary */
+.btn-secondary {
+  border-color: #4b5563;
+  color: #e5e7eb;
+  background: rgba(17, 24, 39, 0.9);
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+}
+
+/* Module buttons */
+.module-btn {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.btn-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+/* ================== STATUS PILL ================== */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid #374151;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.pill-online {
+  border-color: var(--main-color);
+  color: var(--main-color);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
+}
+
+.pill-offline {
+  border-color: var(--alert-color);
+  color: var(--alert-color);
+}
+
+/* ================== TABLES ================== */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+th,
+td {
+  padding: 6px 8px;
+  text-align: left;
+}
+
+th {
+  background: #001f0a;
+  color: var(--accent-color);
+  border-bottom: 1px solid var(--dim-color);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+tbody tr:nth-child(even) td {
+  background: rgba(0, 12, 0, 0.95);
+}
+
+tbody tr:nth-child(odd) td {
+  background: rgba(0, 5, 0, 0.98);
+}
+
+tbody tr:hover td {
+  background: var(--main-color);
+  color: #000;
+  cursor: pointer;
+}
+
+/* OS pill trong bảng agent list */
+.os-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: capitalize;
+}
+
+.os-pill img {
+  width: 14px;
+  height: 14px;
+}
+
+/* ================== PLACEHOLDER ================== */
+
+.placeholder {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--dim-color);
+  font-size: 12px;
+  color: #9ca3af;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* ================== SCREEN & WEBCAM ================== */
+
+.screen-preview,
+.webcam-preview {
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--dim-color);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      #000,
+      #000 1px,
+      #001100 1px,
+      #001100 2px
+    );
+  padding: 6px;
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.screen-preview img,
+.webcam-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  filter: contrast(1.1) saturate(1.05);
+}
+
+/* ================== TICKER BAR ================== */
+
+.ticker-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  background: rgba(0, 0, 0, 0.95);
+  border-top: 1px solid var(--dim-color);
+  overflow: hidden;
+  z-index: 60;
+}
+
+.ticker-track {
+  display: inline-flex;
+  gap: 60px;
+  white-space: nowrap;
+  padding-left: 100%;
+  animation: ticker-move 30s linear infinite;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.ticker-track span {
+  color: var(--accent-color);
+  text-transform: uppercase;
+}
+
+@keyframes ticker-move {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ================== SCROLLBAR ================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--dim-color);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--main-color);
+}
+
+/* ================== RESPONSIVE ================== */
+
+@media (max-width: 900px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .page {
+    padding: 18px 14px 40px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-wave {
+    width: 100%;
+  }
+}
+/* FORCE agent-detail to use hacker theme */
+app-agent-detail .card,
+app-agent-detail .section-card,
+app-agent-detail .modules-card {
+  background: rgba(0, 10, 0, 0.9) !important;
+  border: 1px solid var(--dim-color) !important;
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.15) !important;
+  color: var(--main-color) !important;
+}
+
+app-agent-detail h2,
+app-agent-detail h3,
+app-agent-detail p,
+app-agent-detail span {
+  color: var(--main-color) !important;
+}
+.btn-danger {
+  background: rgba(255, 55, 55, 0.15);
+  border: 1px solid #ff4444;
+  color: #ff6666;
+  padding: 4px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 55, 55, 0.35);
+  color: #fff;
+}
+/* .keylog-textarea {
+  width: 100%;
+  height: 300px;
+  background: #000;
+  color: #00ff66;
+  padding: 10px;
+  border: 1px solid #00aa33;
+  font-size: 15px;
+  white-space: pre-wrap;
+} */
+ .keylog-textarea {
+  width: 100%;
+  height: 280px;
+  background: #0a0f0a;
+  color: #00ff66;
+  border: 1px solid rgba(0,255,100,0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 15px;
+  white-space: pre-wrap;
+  outline: none;
+  resize: vertical;
+}

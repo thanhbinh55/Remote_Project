@@ -1,4 +1,4 @@
-<style>
+<!-- <style>
   body {
     background: linear-gradient(to bottom right, #f8fafc, #eef2ff);
   }
@@ -164,8 +164,99 @@
     </table>
 
   </div>
-</div>
+</div> -->
 
+<div class="page">
+
+  <!-- <div class="header">
+    <div class="header-left">
+      <h1 class="header-title">DANH SÁCH AGENTS</h1>
+      <p class="tagline">Chọn Agent để điều khiển và gửi lệnh WebSocket.</p>
+    </div> -->
+
+    <!-- Dãy sóng NETWORK_TRAFFIC -->
+    <!-- <div class="header-wave">
+      <canvas id="netwave"></canvas>
+      <div class="header-wave-label">NETWORK_TRAFFIC</div>
+    </div>
+  </div> -->
+  <!-- <div class="traffic-wrapper">
+    <div class="header-wave-label">NETWORK_TRAFFIC</div>
+    <div class="header-wave">
+        <canvas id="netwave"></canvas>
+    </div>
+</div> -->
+  <div class="header">
+
+  <div class="header-left">
+    <h1 class="header-title">DANH SÁCH AGENTS</h1>
+    <p class="tagline">Chọn Agent để điều khiển và gửi lệnh WebSocket.</p>
+  </div>
+
+  <!-- Đặt sóng NGAY TRONG header -->
+  <div class="traffic-wrapper">
+      <div class="header-wave-label">NETWORK_TRAFFIC</div>
+      <div class="header-wave">
+          <canvas id="netwave"></canvas>
+      </div>
+  </div>
+
+</div> <!-- đúng vị trí đóng header -->
+
+  <section class="card">
+
+    <table>
+      <thead>
+        <tr>
+          <th>MACHINE ID</th>
+          <th>IP</th>
+          <th>OS</th>
+          <th>WS PORT</th>
+          <th>ONLINE</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let a of agents()">
+          <td>{{ a.machineId }}</td>
+          <td>{{ a.ip }}</td>
+
+          <td>
+            <span class="os-pill">
+              <img [src]="
+                  a.os === 'windows' ? 'assets/icons/windows.svg' :
+                  a.os === 'linux' ? 'assets/icons/linux.svg' :
+                  'assets/icons/mac.svg'
+              ">
+              {{ a.os }}
+            </span>
+          </td>
+
+          <td>{{ a.wsPort }}</td>
+
+          <td>
+            <span class="status-pill" [ngClass]="a.online ? 'pill-online' : 'pill-offline'">
+              ● {{ a.online ? 'Online' : 'Offline' }}
+            </span>
+          </td>
+
+          <td>
+            <button
+              class="btn"
+              (click)="connectToAgent(a)"
+              [disabled]="!a.online"
+            >
+              Kết nối
+            </button>
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </section>
+</div>
 
 
 
