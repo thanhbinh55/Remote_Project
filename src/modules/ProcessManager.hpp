@@ -1,7 +1,21 @@
 #pragma once
 #include "../interfaces/IRemoteModule.hpp"
 #include <string>
+#include <iostream>
 #include <nlohmann/json.hpp>
+#include <fstream>
+
+#if _WIN32
+#include <tlhelp32.h>
+#include <windows.h>
+#else
+#include <signal.h>
+#include <wait.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <cstdlib>
+#include <dirent.h>
+#endif
 
 using json = nlohmann::json;
 

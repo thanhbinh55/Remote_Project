@@ -3,6 +3,17 @@
 #include <vector>
 #include <string>
 
+#if _WIN32
+#include <windows.h>
+#include <objidl.h> 
+#else
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <jpeglib.h>
+#include <iostream>
+#include <cstring>
+#endif
+
 class ScreenManager : public IRemoteModule {
 public:
     const std::string& get_module_name() const override { 

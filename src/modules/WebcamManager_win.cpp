@@ -1,12 +1,4 @@
 #include "WebcamManager.hpp"
-#include <windows.h>
-#include <objidl.h> 
-#include <gdiplus.h>
-#include <mfapi.h>
-#include <mfidl.h>
-#include <mfreadwrite.h>
-#include <iostream>
-#include <vector>
 
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "mf.lib")

@@ -1,11 +1,23 @@
 // KeyManager.hpp
 #pragma once
-#include "../interfaces/IRemoteModule.hpp"
 #include <string>
 #include <functional>
-#include <windows.h>
 #include <thread>
 #include <nlohmann/json.hpp>
+#include "../interfaces/IRemoteModule.hpp"
+
+#if _WIN32
+#include <windows.h>
+#else
+#include <map>
+#include <fstream>
+#include <atomic>
+#include <fcntl.h>      // open
+#include <unistd.h>     // close, read
+#include <linux/input.h>// struct input_event, KEY_*
+#include <dirent.h>     // scandir
+#include <cstring>
+#endif
 
 using json = nlohmann::json;
 

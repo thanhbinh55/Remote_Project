@@ -4,6 +4,18 @@
 #include <atomic>
 #include <vector>
 #include <thread>
+#include <iostream>
+#include <vector>
+
+#if _WIN32
+#include <windows.h>
+#include <objidl.h> 
+#include <gdiplus.h>
+#include <mfapi.h>
+#include <mfidl.h>
+#include <mfreadwrite.h>
+#else
+#endif
 
 class WebcamManager : public IRemoteModule {
 public:

@@ -1,8 +1,6 @@
+#if _WIN32
 #include "AppManager.hpp"
 #include <unordered_map>
-#include <algorithm> // cho std::transform
-#include <cctype>    // cho ::tolower
-#include <vector>
 
 // Helper: Chuyển chuỗi về chữ thường
 static std::string to_lower(std::string s) {
@@ -66,7 +64,7 @@ json AppManager::list_apps() {
         {"status","success"},
         {"module", get_module_name()},
         {"command","LIST"},
-        {"apps", apps}
+        {"data", apps}
     };
 }
 
@@ -160,3 +158,4 @@ json AppManager::handle_command(const json& request) {
 
     return {{"status", "error"}, {"message", "Unknown APP command"}};
 }
+#endif

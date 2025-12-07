@@ -3,9 +3,20 @@
 #include "../interfaces/IRemoteModule.hpp"
 #include <string>
 #include <vector>
-#include <windows.h>
-#include <tlhelp32.h>
 #include <nlohmann/json.hpp>
+#include <algorithm>
+#include <cctype>
+
+#if _WIN32
+#include <tlhelp32.h>
+#include <windows.h> 
+#else
+#include <dirent.h> // for listing apps, processes
+#include <unistd.h> // unix system api
+#include <signal.h> // for killing apps, processes
+#include <fstream> 
+#include <wait.h> // wait for children processes
+#endif
 
 using nlohmann::json;
 

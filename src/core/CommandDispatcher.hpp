@@ -9,7 +9,6 @@
 #include "../modules/ScreenManager.hpp"
 #include "../modules/AppManager.hpp"
 #include "../modules/WebcamManager.hpp"
-#include "../modules/KeyManager.hpp"
 
 class CommandDispatcher {
 private:
@@ -22,7 +21,6 @@ public:
         register_module(std::make_unique<ScreenManager>());
         register_module(std::make_unique<AppManager>());
         register_module(std::make_unique<WebcamManager>());
-        register_module(std::make_unique<KeyManager>());
     }
 
     void register_module(std::unique_ptr<IRemoteModule> module) {
