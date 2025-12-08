@@ -1,6 +1,14 @@
 #pragma once
 #include "../interfaces/IRemoteModule.hpp"
-#include <windows.h>
+
+// --- PHÂN CHIA HỆ ĐIỀU HÀNH ---
+#if defined(_WIN32)
+    #include <windows.h>
+#elif defined(__linux__)
+    #include <X11/Xlib.h>
+    #include <X11/extensions/XTest.h> // Thư viện giả lập Input trên Linux
+#endif
+// ------------------------------
 
 class InputManager : public IRemoteModule {
 public:

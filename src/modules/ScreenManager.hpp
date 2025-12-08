@@ -3,17 +3,20 @@
 #include <vector>
 #include <string>
 
-#if _WIN32
-#include <windows.h>
-#include <objidl.h> 
-#else
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <jpeglib.h>
-#include <iostream>
-#include <cstring>
-#endif
+// --- CẤU HÌNH CHO WINDOWS ---
+#if defined(_WIN32)
+    #include <windows.h>
+    #include <objidl.h> 
+    #include <gdiplus.h> // Thường cần thêm cái này cho chụp ảnh màn hình Windows
 
+// --- CẤU HÌNH CHO LINUX ---
+#elif defined(__linux__)
+    #include <X11/Xlib.h>
+    #include <X11/Xutil.h>
+    #include <jpeglib.h>
+    #include <iostream>
+    #include <cstring>
+#endif
 class ScreenManager : public IRemoteModule {
 public:
     const std::string& get_module_name() const override { 
