@@ -8,8 +8,8 @@
 #include <cctype>
 
 #if _WIN32
+#include <windows.h>
 #include <tlhelp32.h>
-#include <windows.h> 
 #else
 #include <dirent.h> // for listing apps, processes
 #include <unistd.h> // unix system api

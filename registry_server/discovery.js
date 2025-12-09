@@ -25,19 +25,28 @@ const os = require("os");
 
 const server = dgram.createSocket("udp4");
 
-// Hàm lấy IP LAN của Registry server
+// Hàm lấy IP thông minh: Ưu tiên Wifi/LAN, bỏ qua VMware/VirtualBox
 function getLocalIp() {
     const nets = os.networkInterfaces();
+    let bestMatch = "127.0.0.1";
 
     for (const name of Object.keys(nets)) {
         for (const net of nets[name]) {
-            // Lấy IPv4 và không phải 127.0.0.1
+            // Chỉ lấy IPv4 và không phải nội bộ
             if (net.family === "IPv4" && !net.internal) {
-                return net.address;
+                // Ưu tiên dải mạng phổ biến 192.168.1.x hoặc 192.168.0.x hoặc 192.168.88.x
+                // Bỏ qua dải 192.168.137.x (thường là VMware/Hotspot mặc định của Windows)
+                // Bỏ qua dải 192.168.198.x (VMware trong ảnh của bạn)
+                if (!net.address.startsWith("192.168.137.") && 
+                    !net.address.startsWith("192.168.198.") &&
+                    !net.address.startsWith("192.168.56.")) { 
+                    return net.address; // Tìm thấy IP xịn, trả về ngay!
+                }
+                bestMatch = net.address; // Lưu tạm, nếu không tìm thấy cái nào xịn hơn thì dùng cái này
             }
         }
     }
-    return "127.0.0.1"; 
+    return bestMatch;
 }
 
 const REGISTRY_IP = getLocalIp();

@@ -1,6 +1,7 @@
 #if _WIN32
 #include "AppManager.hpp"
 #include <unordered_map>
+#include <shellapi.h> // <--- Thêm dòng này để dùng ShellExecute
 
 // Helper: Chuyển chuỗi về chữ thường
 static std::string to_lower(std::string s) {
@@ -111,29 +112,28 @@ json AppManager::kill_app_by_name(const std::string& keyword) {
 }
 
 // ========== 3. START_APP (Phần bị thiếu gây lỗi) ==========
-json AppManager::start_app(const std::string& path) {
-    STARTUPINFOA si{};
-    PROCESS_INFORMATION pi{};
-    si.cb = sizeof(si);
-    std::string cmd_line = path;
+// ========== 3. START_APP (Sửa lại dùng ShellExecute) ==========
+json AppManager::start_app(const std::string& path_or_cmd) {
+    // ShellExecute thông minh hơn CreateProcess.
+    // Nó có thể mở "chrome", "notepad", "www.google.com", hoặc file ảnh.
+    // Tham số: Handle cha (NULL), Operation ("open"), File/Lệnh, Tham số, Thư mục, Kiểu hiển thị
+    HINSTANCE result = ShellExecuteA(NULL, "open", path_or_cmd.c_str(), NULL, NULL, SW_SHOWNORMAL);
 
-    if (!CreateProcessA(nullptr, &cmd_line[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+    // ShellExecute trả về giá trị > 32 nếu thành công
+    if ((intptr_t)result > 32) {
+        return {
+            {"status", "success"},
+            {"command", "START"},
+            {"message", "Command executed successfully via ShellExecute"},
+            {"input", path_or_cmd}
+        };
+    } else {
         return {
             {"status", "error"},
-            {"message", "Failed to start app"},
-            {"last_error", (int)GetLastError()}
+            {"message", "Failed to start app via ShellExecute"},
+            {"error_code", (int)(intptr_t)result}
         };
     }
-    
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-
-    return {
-        {"status", "success"},
-        {"command", "START"},
-        {"pid", (unsigned long)pi.dwProcessId},
-        {"path", path}
-    };
 }
 
 // ========== 4. DISPATCHER ==========
