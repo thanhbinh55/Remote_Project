@@ -198,13 +198,25 @@ void do_session(tcp::socket s) {
                     std::vector<uint8_t> jpg_data;
                     std::string err;
                     
-                    if (ScreenManager::capture_screen_data(jpg_data, err)) {
+                    bool should_save = true;
+
+                    if (request.contains("payload") && request["payload"].contains("save")) {
+                        should_save = request["payload"]["save"].get<bool>();
+                    }   
+
+                    if (ScreenManager::capture_screen_data(jpg_data, err, should_save)) {
                         {
                             std::lock_guard<std::mutex> lock(*ws_mutex);
                             ws->binary(true);
                             ws->write(net::buffer(jpg_data.data(), jpg_data.size()));
                         }
-                        response = {{"module", "SCREEN"}, {"command", "CAPTURE_COMPLETE"}, {"status", "success"}};
+                        // Chỉ gửi phản hồi text nếu CÓ lưu file (để đỡ spam log client)
+                        if (should_save) {
+                            response = {{"module", "SCREEN"}, {"command", "CAPTURE_COMPLETE"}, {"status", "success"}};
+                        } else {
+                            // Khi stream thì không cần gửi JSON phản hồi, chỉ gửi ảnh là đủ
+                            continue; 
+                        }
                     } else {
                         response = {{"status", "error"}, {"message", err}};
                     }
@@ -365,6 +377,11 @@ void sendHeartbeat() {
 
 // ==================== MAIN ====================
 int main() {
+    // [MỚI] Fix lỗi lệch chuột trên màn hình High DPI
+    #ifdef _WIN32
+        SetProcessDPIAware(); 
+    #endif
+
     // Chỉ set font console trên Windows
     #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);

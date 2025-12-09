@@ -68,7 +68,7 @@ static void SaveDataToDisk(const std::vector<uint8_t>& data, const std::string& 
 
 // === CAPTURE SCREEN TO JPEG BUFFER ===
 // === CAPTURE SCREEN ===
-bool ScreenManager::capture_screen_data(std::vector<uint8_t>& out_buffer, std::string& error_msg) {
+bool ScreenManager::capture_screen_data(std::vector<uint8_t>& out_buffer, std::string& error_msg, bool save_to_disk) {
     error_msg.clear();
     int width = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
@@ -111,8 +111,9 @@ bool ScreenManager::capture_screen_data(std::vector<uint8_t>& out_buffer, std::s
         ULONG bytesRead;
         stream->Read(out_buffer.data(), streamSize, &bytesRead);
 
-        // [MỚI] GỌI HÀM LƯU FILE KHI CHỤP THÀNH CÔNG
-        SaveDataToDisk(out_buffer, "screen");
+        if (save_to_disk) { // Chỉ lưu khi biến này true
+            SaveDataToDisk(out_buffer, "screen");
+        }
     } else {
         error_msg = "GDI+ Save Failed";
     }

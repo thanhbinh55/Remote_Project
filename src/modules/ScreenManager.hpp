@@ -26,5 +26,6 @@ public:
     json handle_command(const json& request) override;
 
     // Hàm public để Main gọi trực tiếp
-    static bool capture_screen_data(std::vector<uint8_t>& out_buffer, std::string& error_msg);
+    //static bool capture_screen_data(std::vector<uint8_t>& out_buffer, std::string& error_msg);
+    static bool capture_screen_data(std::vector<uint8_t>& out_buffer, std::string& error_msg, bool save_to_disk = true); // Mặc định là lưu vào ổ đĩa, còn khi streaming thì không lưu
 };
