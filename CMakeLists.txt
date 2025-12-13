@@ -821,9 +821,6 @@ find_package(Boost REQUIRED COMPONENTS system)
 # Mẹo: Nếu vcpkg cài dynamic, bạn có thể cần copy 2 file dll của OpenSSL đi kèm.
 find_package(OpenSSL REQUIRED)
 
-# ------------------------------------------------------------------------------
-# 4. KHAI BÁO SOURCE CODE CỦA BẠN
-# ------------------------------------------------------------------------------
 if(WIN32)
     set(OS_SRCS
         src/modules/ProcessManager_win.cpp
@@ -838,6 +835,28 @@ if(WIN32)
     )
     # Các thư viện hệ thống Windows
     set(OS_LIBS ws2_32 user32 advapi32 shlwapi ole32 mf mfplat mfreadwrite mfuuid gdiplus crypt32 wininet)
+
+# === [THÊM PHẦN NÀY CHO LINUX] ===
+elseif(UNIX)
+    set(OS_SRCS
+        src/modules/ProcessManager_linux.cpp
+        src/modules/SystemManager_linux.cpp
+        src/modules/ScreenManager_linux.cpp
+        src/modules/AppManager_linux.cpp
+        src/modules/KeyManager_linux.cpp
+        src/modules/WebcamManager_linux.cpp
+        src/modules/FileManager_linux.cpp
+        src/modules/InputManager_linux.cpp
+        src/modules/EdgeManager_linux.cpp
+    )
+    
+    # Thư viện Linux cần thiết
+    # pthread: Cho đa luồng (std::thread)
+    # dl: Cho dynamic loading
+    # X11, Xtst: Thường cần cho ScreenManager (chụp màn hình) và InputManager (chuột/phím)
+    
+    find_package(JPEG REQUIRED) 
+    set(OS_LIBS pthread dl X11 Xtst JPEG::JPEG)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -848,21 +867,10 @@ add_executable(server main.cpp ${OS_SRCS})
 target_include_directories(server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_link_libraries(server PRIVATE 
-    # Link với thư viện tĩnh SQLite ta vừa tạo ở trên
     sqlite3_static
-    
-    # Các thư viện khác
     Boost::system 
     nlohmann_json::nlohmann_json 
     OpenSSL::Crypto
     OpenSSL::SSL
-    ${OS_LIBS}
+    ${OS_LIBS} # Biến này giờ sẽ chứa thư viện Windows hoặc Linux tùy môi trường
 )
-
-# Copy file DLL của OpenSSL (nếu cần) ra thư mục build để test
-# if(WIN32 AND OpenSSL_FOUND)
-#    file(COPY ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} DESTINATION ${CMAKE_BINARY_DIR}/Release)
-# endif()
-
-message(STATUS "=== BUILD STATUS ===")
-message(STATUS "SQLite3 mode: Static Embedded (No DLL required)")

