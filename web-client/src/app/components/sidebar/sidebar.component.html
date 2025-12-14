@@ -1,0 +1,22 @@
+<div class="backdrop" *ngIf="open" (click)="close.emit()"></div>
+
+<aside class="sidebar" [class.open]="open">
+  <div class="sidebar-title">OPERATIONS</div>
+
+  <nav>
+    <a routerLink="/" (click)="close.emit()">
+      <span class="icon">🖥</span>
+      <span>Agents</span>
+    </a>
+
+    <a routerLink="/about" (click)="close.emit()">
+      <span class="icon">ℹ</span>
+      <span>About</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sys-line">SYSTEM STATUS</div>
+    <div class="sys-ok">ALL SYSTEMS OPERATIONAL</div>
+  </div>
+</aside>

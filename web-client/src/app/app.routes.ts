@@ -1,15 +1,10 @@
 import { Routes } from '@angular/router';
-import { RootLayout } from './root';
-import { App } from './app';
+import { AgentsComponent } from './pages/agents/agents';
 import { AgentDetailComponent } from './pages/agent-detail/agent-detail';
+import { AboutComponent } from './pages/about/about';
 
 export const routes: Routes = [
-  {
-    path: '',
-    component: RootLayout,
-    children: [
-      { path: '', component: App },
-      { path: 'agent/:id', component: AgentDetailComponent }
-    ]
-  }
+  { path: '', component: AgentsComponent },
+  { path: 'agent/:id', component: AgentDetailComponent },
+  { path: 'about', component: AboutComponent }
 ];
