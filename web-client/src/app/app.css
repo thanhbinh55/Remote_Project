@@ -1,24 +1,98 @@
-table {
-  border-collapse: collapse;
-  margin-top: 20px;
+/* ===== AGENT GRID ===== */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
-th, td {
-  padding: 8px 12px;
-  text-align: left;
+/* ===== AGENT CARD ===== */
+.agent-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-th {
-  background-color: #494444;
+.agent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.35);
 }
 
-button {
-  background: #007bff;
+/* ===== HEADER ===== */
+.agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.agent-title {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.agent-status {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+/* ===== STATUS DOT ===== */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.status-dot.on {
+  background: var(--primary);
+  box-shadow: 0 0 8px rgba(74,222,128,0.8);
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+  100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+}
+
+/* ===== BODY ===== */
+.agent-body .row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.agent-body b {
+  color: var(--text-main);
+}
+
+/* ===== ACTION ===== */
+.agent-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #052e16;
   border: none;
-  color: white;
-  border-radius: 4px;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-button:disabled {
-  background: gray;
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

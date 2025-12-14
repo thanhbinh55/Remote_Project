@@ -1,0 +1,27 @@
+<section class="agents-page">
+  <h1 class="page-title">AGENTS ONLINE</h1>
+  <p class="page-sub">Select an agent to establish remote control session</p>
+
+  <div class="agents-grid">
+    <div
+      class="agent-card"
+      *ngFor="let a of agents()"
+      [class.online]="a.online"
+    >
+      <div class="agent-header">
+        <span class="status-dot"></span>
+        <span class="machine">{{ a.machineId }}</span>
+      </div>
+
+      <div class="agent-info">
+        <div><label>IP</label><span>{{ a.ip }}</span></div>
+        <div><label>OS</label><span>{{ a.os }}</span></div>
+        <div><label>WS</label><span>{{ a.wsPort }}</span></div>
+      </div>
+
+      <button class="connect-btn" (click)="open(a)">
+        CONNECT
+      </button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,127 @@
+.about-page {
+  padding: 50px 60px;
+  max-width: 1200px;
+}
+
+.about-hero {
+  margin-bottom: 50px;
+}
+
+.about-hero h1 {
+  font-size: 34px;
+  letter-spacing: 3px;
+  color: #66faff;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: #8aa0b8;
+  max-width: 700px;
+}
+
+/* PANEL */
+.panel {
+  background: linear-gradient(180deg, #0f1724, #0b1018);
+  border: 1px solid rgba(102,250,255,0.12);
+  border-radius: 16px;
+  padding: 26px;
+  margin-bottom: 36px;
+}
+
+.panel h2 {
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  color: #6ee7ff;
+}
+
+.panel p {
+  color: #cbd5f5;
+  line-height: 1.6;
+}
+
+/* FEATURES */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.feature-card {
+  background: #0a0f18;
+  border: 1px solid rgba(102,250,255,0.15);
+  border-radius: 14px;
+  padding: 20px;
+  transition: 0.3s;
+}
+
+.feature-card:hover {
+  box-shadow: 0 0 28px rgba(102,250,255,0.25);
+  transform: translateY(-6px);
+}
+
+.feature-card .icon {
+  font-size: 26px;
+}
+
+.feature-card h3 {
+  margin: 10px 0 6px;
+  color: #e0f2fe;
+}
+
+/* TECH STACK */
+.tech-list div {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(102,250,255,0.15);
+  color: #c7d2fe;
+}
+
+.tech-list label {
+  color: #6b7280;
+}
+
+/* TEAM */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+}
+
+.team-card {
+  background: #0a0f18;
+  border: 1px solid rgba(102,250,255,0.15);
+  border-radius: 14px;
+  padding: 22px;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.team-card:hover {
+  box-shadow: 0 0 30px rgba(102,250,255,0.3);
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #00f0ff;
+  color: #041014;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin: 0 auto 12px;
+}
+
+/* FOOTER */
+.about-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #00ff9c;
+  opacity: 0.8;
+}

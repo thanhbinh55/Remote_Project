@@ -1,0 +1,78 @@
+.agents-page {
+  padding: 40px;
+}
+
+.page-title {
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: #66faff;
+}
+
+.page-sub {
+  color: #7a8ca5;
+  margin-bottom: 32px;
+}
+
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
+}
+
+.agent-card {
+  background: linear-gradient(180deg, #0f1722, #0b1018);
+  border: 1px solid rgba(102,250,255,0.15);
+  border-radius: 14px;
+  padding: 22px;
+  position: relative;
+  box-shadow: 0 0 0 rgba(102,250,255,0);
+  transition: 0.3s;
+}
+
+.agent-card.online {
+  box-shadow: 0 0 25px rgba(102,250,255,0.15);
+}
+
+.agent-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 35px rgba(102,250,255,0.35);
+}
+
+.agent-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  background: #00ff9c;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ff9c;
+}
+
+.agent-info div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin: 6px 0;
+  color: #c7d2fe;
+}
+
+.agent-info label {
+  color: #6b7280;
+}
+
+.connect-btn {
+  margin-top: 18px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #00f0ff, #00ffa2);
+  color: #041014;
+  font-weight: bold;
+  letter-spacing: 1px;
+}

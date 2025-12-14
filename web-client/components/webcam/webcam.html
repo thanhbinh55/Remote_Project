@@ -1,0 +1,27 @@
+<div class="webcam-card">
+  <div class="webcam-header">
+    <h3>Webcam Stream (Realtime Binary)</h3>
+
+    <span
+      class="status-pill"
+      [ngClass]="ws.webcamFrameUrl() ? 'pill-online' : 'pill-offline'"
+    >
+      ● {{ ws.webcamFrameUrl() ? 'Streaming' : 'Stopped' }}
+    </span>
+  </div>
+
+  <div class="webcam-controls">
+    <button class="btn btn-start" (click)="startStream()">▶ Start Stream</button>
+    <button class="btn btn-stop" (click)="stopStream()">⏹ Stop Stream</button>
+  </div>
+
+  <div class="webcam-preview">
+    <ng-container *ngIf="ws.webcamFrameUrl() as frame; else noFrame">
+      <img [src]="frame" alt="Webcam stream" />
+    </ng-container>
+
+    <ng-template #noFrame>
+      <div class="placeholder">Webcam Stream Off</div>
+    </ng-template>
+  </div>
+</div>
