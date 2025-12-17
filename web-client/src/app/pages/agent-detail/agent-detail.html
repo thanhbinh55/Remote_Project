@@ -220,53 +220,56 @@
 
   <div class="module-header">
     <h3>📷 WEBCAM STREAM</h3>
+
     <div class="module-actions">
 
-  <button
-    class="cmd-btn"
-    [class.loading]="webcamBusy"
-    (click)="sendWebcamStartStream()">
-    ▶ START
-  </button>
+      <!-- START -->
+      <button
+        class="cmd-btn"
+        [disabled]="webcamBusy || isRecording"
+        (click)="sendWebcamStartStream()">
+        ▶ START
+      </button>
 
-  <!-- STOP & SAVE -->
-  <div class="cmd-group">
-  <button
-    class="cmd-btn danger"
-    [disabled]="!isRecording"
-    (click)="sendWebcamStopAndSave()">
-    ⏹ STOP & SAVE
-  </button>
+      <!-- STOP -->
+      <button
+        class="cmd-btn danger"
+        [disabled]="!isRecording"
+        (click)="sendWebcamStop()">
+        ⏹ STOP
+      </button>
 
-  <input
-    type="number"
-    min="1"
-    placeholder="sec"
-    [(ngModel)]="stopSaveDelay"
-    (keydown.enter)="onStopSaveEnter()"
-    class="cmd-input">
+      <!-- SAVE TOGGLE -->
+      <button
+        class="save-btn"
+        [class.danger]="saveEnabled"
+        (click)="saveEnabled = !saveEnabled">
+        💾 SAVE
+      </button>
+
+      <!-- TIME INPUT -->
+     <div class="time-input">
+  <span class="time-label">AUTO STOP  ⏱</span>
+
+  <div class="time-fields">
+    <input type="number" min="0" placeholder="HH" [(ngModel)]="stopHour">
+    <span>:</span>
+    <input type="number" min="0" placeholder="MM" [(ngModel)]="stopMinute">
+    <span>:</span>
+    <input type="number" min="0" placeholder="SS" [(ngModel)]="stopSecond">
+  </div>
 </div>
+<!-- <div class="time-chip">
+  ⏱
+  <input type="number" min="0" placeholder="HH" [(ngModel)]="stopHour">
+  :
+  <input type="number" min="0" placeholder="MM" [(ngModel)]="stopMinute">
+  :
+  <input type="number" min="0" placeholder="SS" [(ngModel)]="stopSecond">
+</div> -->
 
-  <!-- STOP NO SAVE -->
-  <div class="cmd-group">
-  <button
-    class="cmd-btn danger"
-    [disabled]="!isRecording"
-    (click)="sendWebcamStopNoSave()">
-    ⏹ STOP (NO SAVE)
-  </button>
 
-  <input
-    type="number"
-    min="1"
-    placeholder="sec"
-    [(ngModel)]="stopNoSaveDelay"
-    (keydown.enter)="onStopNoSaveEnter()"
-    class="cmd-input">
-</div>
-
-</div>
-
+    </div>
   </div>
 
   <div class="webcam-stage">
@@ -284,6 +287,7 @@
 
   <canvas #webcamCanvas hidden></canvas>
 </div>
+
 <!-- ========== EXPLORER MODULE ========== -->
 <div *ngIf="selectedModule() === 'EXPLORER'" class="section-card explorer-module">
 

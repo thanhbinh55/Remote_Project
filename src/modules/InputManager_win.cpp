@@ -20,7 +20,7 @@ json InputManager::handle_command(const json& request) {
         mouse_scroll(p.value("delta", 0));
     }
     else if (cmd == "KEY_EVENT") {
-        bool is_down = (p.value("type", "up") == "down");
+        bool is_down = (p.value("type", "up") == "down");   
         int key = p.value("key", 0);
         key_event(key, is_down);
     }

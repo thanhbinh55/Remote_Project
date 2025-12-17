@@ -20,23 +20,25 @@
 #endif
 
 using json = nlohmann::json;
+
+// Định nghĩa kiểu hàm callback: nhận vào ký tự phím (string)
 using KeyCallback = std::function<void(std::string key_char)>;
 
 class KeyManager : public IRemoteModule {
 public:
+    // --- Bắt buộc implement từ IRemoteModule ---
+    const std::string& get_module_name() const override;
+    json handle_command(const json& request) override;
+
+    // --- Các hàm quản lý Hook ---
+    // Callback cần là static vì Windows Hook là hàm toàn cục (Global C-style function)
     static void set_callback(KeyCallback cb);
+    
     void start_hook();
     void stop_hook();
     
-    // [MỚI] Hàm set trạng thái khóa
+    // Hàm khóa phím (static để gọi được từ trong Hook Procedure nếu cần)
     static void set_locked(bool locked);
-
-    const std::string& get_module_name() const override { 
-        static const std::string name = "KEYBOARD"; 
-        return name; 
-    }
-
-    json handle_command(const json& request) override;
 
 private:
     std::thread hookThread;

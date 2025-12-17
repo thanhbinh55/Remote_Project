@@ -7,6 +7,8 @@
       class="agent-card"
       *ngFor="let a of agents()"
       [class.online]="a.online"
+       [class.offline]="!a.online"
+     
     >
       <div class="agent-header">
         <span class="status-dot"></span>
@@ -19,9 +21,14 @@
         <div><label>WS</label><span>{{ a.wsPort }}</span></div>
       </div>
 
-      <button class="connect-btn" (click)="open(a)">
-        CONNECT
-      </button>
+      <button
+  class="connect-btn"
+  [class.online]="a.online"
+  [class.offline]="!a.online"
+  (click)="a.online && open(a)"
+>
+  {{ a.online ? 'CONNECT' : 'OFFLINE' }}
+</button>
     </div>
   </div>
 </section>
