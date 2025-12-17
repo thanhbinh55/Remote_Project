@@ -219,3 +219,8 @@ void KeyManager::stop_hook() {
         g_fd = -1;
     }
 }
+
+const std::string& KeyManager::get_module_name() const {
+    static const std::string name = "KEYBOARD";
+    return name;
+}
