@@ -97,12 +97,13 @@ Registry Server (NodeJS)
 cd registry_server
 npm install
 node server.js
+```
 
 ### 🐧 2️⃣ Remote Server – Linux
 - Cài dependency
 ```bash
 sudo apt install libx11-dev libxtst-dev
-
+```
 - Build & chạy
 ```bash
 mkdir build
@@ -110,7 +111,7 @@ cd build
 cmake ..
 make
 ./linux/server
-
+```
 ---
 ### 🪟 3️⃣ Remote Server – Windows
 Yêu cầu:
@@ -124,14 +125,16 @@ cd build
 cmake ..
 cmake --build .
 server.exe
-
+```
 ---
 ### 🌐 4️⃣ Web Client
 ```bash
 cd web-client
 npm install
 npm start
-`
+```
 
 - Truy cập:
+```bash
 http://localhost:4200
+```
