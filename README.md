@@ -89,7 +89,6 @@ Registry Server (NodeJS)
 
 ## ⚙️ Cài đặt & Chạy
 
----
 
 ### 🛰 1️⃣ Registry Server (Node.js)
 
@@ -112,7 +111,7 @@ cmake ..
 make
 ./linux/server
 ```
----
+
 ### 🪟 3️⃣ Remote Server – Windows
 Yêu cầu:
 - Visual Studio 2022
@@ -126,7 +125,7 @@ cmake ..
 cmake --build .
 server.exe
 ```
----
+
 ### 🌐 4️⃣ Web Client
 ```bash
 cd web-client
