@@ -97,6 +97,11 @@ cd registry_server
 npm install
 node server.js
 ```
+Nếu thành công sẽ hiện:
+```bash
+[UDP] Discovery server listening...
+[UDP] Registry server running on port 3000
+```
 
 ### 🐧 2️⃣ Remote Server – Linux
 - Cài dependency
@@ -116,15 +121,27 @@ make
 Yêu cầu:
 - Visual Studio 2022
 - CMake
-- vcpkg
+- vcpkg (đã được cấu hình sẵn trong dự án)
+
+Chạy tại thư mục
+```bash
+Remote_Project
+```
 
 ```bash
 mkdir build
 cd build
-cmake ..
-cmake --build .
-server.exe
+cmake --preset windows-vcpkg
+cmake --build build/win --config Release
+
+# Chạy server
+./build/win/Release/server.exe
 ```
+Server sẽ tự:
+
+kết nối Registry Server
+
+đợi Web Client kết nối
 
 ### 🌐 4️⃣ Web Client
 ```bash
@@ -137,3 +154,10 @@ npm start
 ```bash
 http://localhost:4200
 ```
+
+### ▶️ Thứ tự chạy hệ thống
+
+1️⃣ Chạy Registry Server
+2️⃣ Chạy Remote Server trên máy bị điều khiển
+3️⃣ Chạy Web Client
+4️⃣ Mở trình duyệt điều khiển

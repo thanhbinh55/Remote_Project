@@ -147,9 +147,6 @@ void KeyManager::stop_hook() {
         g_isLocked = false;
         std::cout << "[KEYBOARD] Hook stopped.\n";
     }
-    // Lưu ý: Thread cũ vẫn có thể đang treo ở GetMessage, 
-    // nhưng Unhook sẽ làm nó ngừng nhận phím. 
-    // Trong thực tế production cần gửi WM_QUIT tới thread ID để đóng thread sạch sẽ.
 }
 
 json KeyManager::handle_command(const json& request) {

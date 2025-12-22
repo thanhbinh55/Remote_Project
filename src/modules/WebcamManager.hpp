@@ -27,7 +27,6 @@ public:
 
     // Hàm xử lý lệnh JSON (Start/Stop từ client)
     json handle_command(const json& request) override {
-        // Chúng ta xử lý logic stream ở Main thông qua hàm start_stream bên dưới
         // Hàm này chỉ để giữ đúng interface
         return {{"status", "ok"}}; 
     }

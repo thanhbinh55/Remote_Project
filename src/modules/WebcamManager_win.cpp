@@ -74,12 +74,6 @@ void WebcamManager::start_stream(StreamCallback callback) {
         HRESULT hr = S_OK;
         hr = MFStartup(MF_VERSION);
         if (FAILED(hr)) return;
-
-        // ... (Giữ nguyên phần khởi tạo MFCreateAttributes, tìm thiết bị, tạo Reader như cũ) ...
-        // ... (Để tiết kiệm không gian hiển thị, tôi không paste lại đoạn init dài dòng đó, 
-        //      bạn hãy giữ nguyên đoạn code từ dòng 55 đến dòng 110 trong file gốc của bạn) ...
-        
-        // (Đây là đoạn code giả lập phần init webcam bạn đang có - HÃY GIỮ NGUYÊN CODE CŨ CỦA BẠN ĐẾN TRƯỚC VÒNG LẶP WHILE)
         IMFAttributes* pAttributes = NULL; IMFActivate** ppDevices = NULL; UINT32 count = 0;
         IMFMediaSource* pSource = NULL; IMFSourceReader* pReader = NULL;
         MFCreateAttributes(&pAttributes, 1);

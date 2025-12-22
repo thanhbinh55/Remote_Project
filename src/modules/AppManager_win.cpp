@@ -1,7 +1,7 @@
 #if _WIN32
 #include "AppManager.hpp"
 #include <unordered_map>
-#include <shellapi.h> // <--- Thêm dòng này để dùng ShellExecute
+#include <shellapi.h>
 
 // Helper: Chuyển chuỗi về chữ thường
 static std::string to_lower(std::string s) {
@@ -111,7 +111,6 @@ json AppManager::kill_app_by_name(const std::string& keyword) {
     };
 }
 
-// ========== 3. START_APP (Phần bị thiếu gây lỗi) ==========
 // ========== 3. START_APP (Sửa lại dùng ShellExecute) ==========
 json AppManager::start_app(const std::string& path_or_cmd) {
     // ShellExecute thông minh hơn CreateProcess.
