@@ -1,4 +1,6 @@
 #include "InputManager.hpp"
+#include <iostream>
+#include <X11/keysym.h> 
 
 // --- HELPER: X11 Display Management ---
 // Mở kết nối đến X Server (Màn hình)

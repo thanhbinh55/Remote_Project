@@ -1,4 +1,5 @@
 #include "KeyManager.hpp"
+#include <iostream>
 
 // --- BIẾN TOÀN CỤC ---
 static KeyCallback g_callback = nullptr;

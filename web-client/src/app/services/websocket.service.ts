@@ -51,6 +51,13 @@ export class WebSocketService {
   // =============================
   // CONNECT
   // =============================
+  disconnect() {
+  if (this.socket) {
+    this.socket.close();          // 🔴 đóng WS
+    this.socket = null;
+    this.status.update(() => 'disconnected');// cập nhật status (signal/observable)
+  }
+}
   connect(ip: string, port: number) {
     const url = `ws://${ip}:${port}`;
     console.log("Connecting WS:", url);
@@ -154,7 +161,7 @@ if (msg.module === "APP" && msg.command === "LIST") {
     this.appList.set(mapped);
     return;
   }
-
+  
   // Nếu backend trả { apps: [...] }
   if (Array.isArray(msg.apps)) {
     const mapped = msg.apps.map((item: any) => ({

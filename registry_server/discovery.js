@@ -70,7 +70,7 @@ server.on("listening", () => {
 server.on("message", (msg, rinfo) => {
     console.log(`[UDP] Message from ${rinfo.address}:`, msg.toString());
 
-    if (msg.toString() === "DISCOVER_REGISTRY") {
+    if (msg.toString() === "DISCOVER_REGISTRY")  {
         const reply = "REGISTRY_IP:" + REGISTRY_IP;
         server.send(reply, rinfo.port, rinfo.address);
         console.log(`[UDP] Sent: ${reply} → to ${rinfo.address}:${rinfo.port}`);
