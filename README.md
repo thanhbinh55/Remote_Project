@@ -20,7 +20,7 @@ và thực hành môn Mạng máy tính, với khả năng giao tiếp theo th�
 - [Tính năng chính](#-tính-năng-chính)
 - [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
 - [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Cài đặt và chạy](#-cài-đặt-và-chạy)
+- [Cài đặt & Chạy](#-cài-đặt--chạy)
 - [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
 - [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
 - [API Reference](#-api-reference)
@@ -307,7 +307,7 @@ Các thành phần giao tiếp với nhau chủ yếu thông qua **WebSocket tr�
 
 ---
 
-## 🖥️ Yêu cầu hệ thống
+## 🖥 Yêu cầu hệ thống
 
 Hệ thống được thiết kế và kiểm thử **chỉ trong phạm vi mạng LAN**, phục vụ mục đích
 học tập và hỗ trợ kỹ thuật cơ bản. Các yêu cầu dưới đây được tổng hợp dựa trên
@@ -379,7 +379,7 @@ học tập và hỗ trợ kỹ thuật cơ bản. Các yêu cầu dưới đây
 - Không can thiệp kernel, không bypass cơ chế bảo mật hệ điều hành.
 
 
-## ⚙️ Cài đặt và Chạy
+## 🔧 Cài đặt & Chạy
 
 Hệ thống được triển khai và sử dụng **hoàn toàn trong mạng LAN**.
 
