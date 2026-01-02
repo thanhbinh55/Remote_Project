@@ -1,0 +1,36 @@
+:root {
+  --bg-main: #0e1117;
+  --bg-panel: #161b22;
+  --bg-hover: #1f2633;
+  --border: #2a3241;
+
+  --text-main: #e6edf3;
+  --text-muted: #9ba4b0;
+
+  --primary: #4f8cff;
+  --success: #2ecc71;
+  --danger: #ff5c5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+}

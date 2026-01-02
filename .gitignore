@@ -1,0 +1,18 @@
+# IDE
+.vscode/
+.vs/
+
+# Build
+build/
+out/
+
+# Executables
+*.exe
+*.obj
+*.pdb
+
+# Temporary
+Checking/
+Get-Item
+$null
+#

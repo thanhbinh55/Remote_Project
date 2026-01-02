@@ -1,0 +1,10 @@
+<app-topbar (toggleSidebar)="toggleSidebar()"></app-topbar>
+
+<app-sidebar
+  [open]="sidebarOpen()"
+  (close)="closeSidebar()">
+</app-sidebar>
+
+<main class="app-main" (click)="closeSidebar()">
+  <router-outlet></router-outlet>
+</main>

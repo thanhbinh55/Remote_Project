@@ -1,0 +1,191 @@
+
+
+.about-hero {
+  margin-bottom: 50px;
+}
+
+.about-hero h1 {
+  font-size: 34px;
+  letter-spacing: 3px;
+  color: #66faff;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: #8aa0b8;
+  max-width: 700px;
+}
+
+/* PANEL */
+.panel {
+  background: linear-gradient(180deg, #0f1724, #0b1018);
+  border: 1px solid rgba(102,250,255,0.12);
+  border-radius: 16px;
+  padding: 26px;
+  margin-bottom: 36px;
+}
+
+.panel h2 {
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  color: #6ee7ff;
+}
+
+.panel p {
+  color: #cbd5f5;
+  line-height: 1.6;
+}
+
+/* FEATURES */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.feature-card {
+  background: #0a0f18;
+  border: 1px solid rgba(102,250,255,0.15);
+  border-radius: 14px;
+  padding: 20px;
+  transition: 0.3s;
+}
+
+.feature-card:hover {
+  box-shadow: 0 0 28px rgba(102,250,255,0.25);
+  transform: translateY(-6px);
+}
+
+.feature-card .icon {
+  font-size: 26px;
+}
+
+.feature-card h3 {
+  margin: 10px 0 6px;
+  color: #e0f2fe;
+}
+
+/* TECH STACK */
+.tech-list div {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(102,250,255,0.15);
+  color: #c7d2fe;
+}
+
+.tech-list label {
+  color: #6b7280;
+}
+
+/* TEAM */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+}
+
+.team-card {
+  background: #0a0f18;
+  border: 1px solid rgba(102,250,255,0.15);
+  border-radius: 14px;
+  padding: 22px;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.team-card:hover {
+  box-shadow: 0 0 30px rgba(102,250,255,0.3);
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #00f0ff;
+  color: #041014;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin: 0 auto 12px;
+}
+
+/* FOOTER */
+.about-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #00ff9c;
+  opacity: 0.8;
+}
+.about-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width: 100%;
+  max-width: 1200px;
+
+  margin: 0 auto;            /* 🔑 CÁI QUAN TRỌNG NHẤT */
+  padding: 60px 24px 80px;
+}
+
+.panel {
+  width: 100%;  /* hoặc 1200px nếu bạn thích rộng */
+  margin: 0 auto 36px;
+
+  padding: 32px 36px;
+  border-radius: 18px;
+}
+.about-hero {
+  width: 100%;
+  text-align: center;  
+  margin: 0 auto 60px;
+}
+.about-hero h1 {
+  margin: 0 auto 12px;
+}
+.about-hero {
+  padding: 40px 0 20px;
+}
+
+.about-hero h1 {
+  text-shadow:
+    0 0 20px rgba(0,255,255,0.35);
+}
+
+.about-hero .subtitle {
+  margin: 0 auto;
+  max-width: 720px;     /* tránh dòng quá dài */
+}
+.features-grid,
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.lang-switch {
+  text-align: right;
+  margin-bottom: 24px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: 1px solid rgba(102,250,255,0.4);
+  color: #66faff;
+  padding: 6px 12px;
+  margin-left: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.lang-btn.active {
+  opacity: 1;
+  box-shadow: 0 0 10px rgba(102,250,255,0.4);
+}
