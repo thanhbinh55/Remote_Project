@@ -1,4 +1,4 @@
-# 🖥 Remote Control Desktop Application
+# 🖥 Remote Desktop Application
 
 Đồ án Môn **Mạng Máy Tính** – Hệ thống Điều khiển & Giám sát Máy tính trong mạng LAN
 
